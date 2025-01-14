@@ -3,14 +3,18 @@
 
 #include <time.h>
 
-struct arp_cache_entry {
-    char ip[16];
-    char mac[18];
-    time_t timestamp;
-};
+// Định nghĩa cấu trúc ARP Entry
+struct arp_entry {
+    char ip_addr[16];      // Địa chỉ IP (key)
+    char mac_addr[18];     // Địa chỉ MAC
+    time_t timestamp;      // Thời điểm lưu entry
+    UT_hash_handle hh;     // Cấu trúc hỗ trợ trong uthash
+}; 
 
-void add_element_to_cache(const char *ip, const char *mac);
-int is_entry_expired(time_t timestamp);
-void remove_element_expire();
+// Khai báo các hàm
+void add_to_cache(const char* ip, const char* mac);
+char* get_element_from_cache(const char* ip);
+int lookup_element_to_cache(const char* ip);
+int is_element_exist(const char* ip);
 
 #endif
