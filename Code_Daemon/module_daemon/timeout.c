@@ -2,13 +2,16 @@
 #include "arp_cache.h"
 #include <time.h>
 
-void remove_element_expired() {
-    for (int i = 0; i < arp_cache_size; i++) {
+struct arp_entry arp_cache[MAX_ARP_CACHE_SIZE];
+int arp_cache_size = 0;
+
+void remove_element_expired(int *arp_cache_size, struct arp_entry arp_cache[]) {
+    for (int i = 0; i < *arp_cache_size; i++) {
         if (is_element_expired(arp_cache[i].timestamp)) {
-            for (int j = i; j < arp_cache_size - 1; j++) {
+            for (int j = i; j < *arp_cache_size - 1; j++) {
                 arp_cache[j] = arp_cache[j + 1];
             }
-            arp_cache_size--;
+            (*arp_cache_size)--;
             i--;
         }
     }
