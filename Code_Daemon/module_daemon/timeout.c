@@ -1,9 +1,10 @@
 #include "timeout.h"
 #include "arp_cache.h"
+#include <time.h>
 
-void remove_element_expire() {
+void remove_element_expired() {
     for (int i = 0; i < arp_cache_size; i++) {
-        if (is_entry_expired(arp_cache[i].timestamp)) {
+        if (is_element_expired(arp_cache[i].timestamp)) {
             for (int j = i; j < arp_cache_size - 1; j++) {
                 arp_cache[j] = arp_cache[j + 1];
             }
@@ -13,7 +14,7 @@ void remove_element_expire() {
     }
 }
 
-int is_element_expire(time_t timestamp) {
+int is_element_expired(time_t timestamp) {
     time_t current_time = time(NULL);
-    return (current_time - timestamp) > 15; // Example: 15 seconds timeout
+    return (current_time - timestamp) > 15; 
 }

@@ -3,11 +3,13 @@
 #include <stdint.h>
 #include <time.h>
 
-// Include headers for modules
 #include "module_daemon/arp_cache.h"
 #include "module_daemon/arp.h"
 #include "module_daemon/ipc_daemon.h"
 #include "module_daemon/timeout.h"
+
+#define MSG_QUEUE_NAME "/my_message_queue"  
+
 
 int main() {
     const char *iface = "eth0";
