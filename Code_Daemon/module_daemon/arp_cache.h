@@ -6,8 +6,6 @@
 #define MAX_ARP_CACHE_SIZE 100
 
 extern int arp_cache_size;
-extern struct arp_entry *arp_cache_head;
-extern struct arp_entry arp_cache[MAX_ARP_CACHE_SIZE];
 
 struct arp_entry {
     char ip_addr[16];      
@@ -15,6 +13,9 @@ struct arp_entry {
     time_t timestamp;      
     UT_hash_handle hh;     
 }; 
+
+extern struct arp_entry *arp_cache_head;
+extern struct arp_entry arp_cache[MAX_ARP_CACHE_SIZE];
 
 void lookup_element_to_cache(const char* ip, const char* mac);
 char* get_element_from_cache(const char* ip);

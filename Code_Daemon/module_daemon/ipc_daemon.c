@@ -1,3 +1,5 @@
+// Đã test
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,10 +10,6 @@
 #include <fcntl.h>
 #include "ipc_daemon.h"
 
-struct msgbuf {
-    long mtype;
-    char mtext[100];
-};
 
 void create_daemon(void) {
     pid_t pid = fork();
@@ -69,20 +67,26 @@ void send_msg_to_cli(const char *name, char* msg) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Message sent to client: %s\n", message.mtext);
+    printf("MAC address target sent to CLI: %s\n", message.mtext);
 
     mq_close(mq);
 }
 
 void receive_msg_from_cli(const char *name) {
-    mqd_t mq = mq_open(name, O_RDONLY);
+    mqd_t mq = mq_open(MQ_NAME, O_RDONLY);
     if (mq == (mqd_t) -1) {
         perror("mq_open failed");
         exit(EXIT_FAILURE);
     }
 
+    struct mq_attr attr;
+    if (mq_getattr(mq, &attr) == -1) {
+        perror("mq_getattr failed");
+        exit(EXIT_FAILURE);
+    }
+
     struct msgbuf message;
-    ssize_t bytes_read = mq_receive(mq, (char*)&message, sizeof(message.mtext), NULL);
+    ssize_t bytes_read = mq_receive(mq, (char*)&message, attr.mq_msgsize, NULL); 
     if (bytes_read == -1) {
         perror("mq_receive failed");
         exit(EXIT_FAILURE);

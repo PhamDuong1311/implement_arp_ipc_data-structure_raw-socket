@@ -1,3 +1,12 @@
+/* 
+Problem: Muốn implement ARP protocol trên Github Codespaces nhưng
+nó có 1 vấn đề đó là Codespace sử dụng môi trường container hóa, vì thế 
+Codespaces sẽ không có quyền truy cập vào các card vật lý thật (card WiFi 
+hay Ethernet) mà chỉ được setup trên interface ảo (eth0, docker0, lo ảo),
+mà mục tiêu đề ra đó là implement ARP trên 1 máy có sử dụng 2 card wifi
+=> sử dụng Codespaces bất khả thi => phải cài trực tiếp linux :< => xử lý sau...
+*/
+
 #include "arp.h"
 #include <stdio.h>
 #include <string.h>
