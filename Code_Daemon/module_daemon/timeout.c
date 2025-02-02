@@ -5,7 +5,7 @@
 #include <time.h>
 
 struct arp_entry arp_cache[MAX_ARP_CACHE_SIZE];
-int arp_cache_size = 0;
+int arp_cache_size;
 
 void remove_element_expired(int *arp_cache_size, struct arp_entry arp_cache[]) {
     for (int i = 0; i < *arp_cache_size; i++) {
@@ -21,5 +21,6 @@ void remove_element_expired(int *arp_cache_size, struct arp_entry arp_cache[]) {
 
 int is_element_expired(time_t timestamp) {
     time_t current_time = time(NULL);
-    return (current_time - timestamp) > 15; 
+    if ((current_time - timestamp) > 15) return 1;
+    return 0; 
 }

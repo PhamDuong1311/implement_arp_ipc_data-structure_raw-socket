@@ -57,14 +57,23 @@ void receive_msg_from_daemon(const char *name) {
         exit(EXIT_FAILURE);
     }
 
-    struct msgbuf message;
-    ssize_t bytes_read = mq_receive(mq, (char*)&message, attr.mq_msgsize, NULL);
-    if (bytes_read == -1) {
-        perror("mq_receive failed");
-        exit(EXIT_FAILURE);
+    ssize_t bytes_read = -1;
+    while (bytes_read == -1) {
+        struct msgbuf message;
+        bytes_read = mq_receive(mq, (char*)&message, attr.mq_msgsize, NULL);
+        if (bytes_read == -1) {
+            perror("mq_receive failed");
+            exit(EXIT_FAILURE);
+        }
+
+        printf("MAC address target received from daemon: %s\n", message.mtext);
     }
-
-    printf("MAC address target received from daemon: %s\n", message.mtext);
-
     mq_close(mq);
+}
+
+int main() {
+    init_ipc_cli(MQ_NAME);
+    send_msg_to_daemon(MQ_NAME);
+
+    receive_msg_from_daemon(MQ_NAME);
 }
