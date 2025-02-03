@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+extern char mac_target[6];
+
 struct arp_header {
     uint16_t hw_type;
     uint16_t pro_type;
@@ -22,6 +24,5 @@ struct interface_info {
 
 struct interface_info get_src_addr(const char *iface);
 void send_arp_request(const char *iface, const char *target_ip);
-void receive_arp_reply();
-
+void receive_arp_reply(const char *iface);
 #endif

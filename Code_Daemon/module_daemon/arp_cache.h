@@ -1,6 +1,8 @@
 #ifndef ARP_CACHE_H
 #define ARP_CACHE_H
 
+#include "uthash.h"
+
 #include <time.h>
 
 #define MAX_ARP_CACHE_SIZE 100
@@ -17,7 +19,7 @@ struct arp_entry {
 extern struct arp_entry *arp_cache_head;
 extern struct arp_entry arp_cache[MAX_ARP_CACHE_SIZE];
 
-void lookup_element_to_cache(const char* ip, const char* mac);
-char* get_element_from_cache(const char* ip);
+void lookup_element_to_cache(char* ip, unsigned char* mac);
+char* get_element_from_cache(char* ip);
 
 #endif

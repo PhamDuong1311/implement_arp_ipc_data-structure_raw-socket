@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include "ipc_daemon.h"
 
+char ip_target[256] = "";
+
 
 void create_daemon(void) {
     pid_t pid = fork();
@@ -91,8 +93,11 @@ void receive_msg_from_cli(const char *name) {
         perror("mq_receive failed");
         exit(EXIT_FAILURE);
     }
+    
+    strncpy(ip_target, message.mtext, sizeof(ip_target) - 1);
+    ip_target[sizeof(ip_target) - 1] = '\0'; 
 
-    printf("Message received from client: %s\n", message.mtext);
+    printf("IP address received from CLI: %s\n", message.mtext);
 
     mq_close(mq);
 }

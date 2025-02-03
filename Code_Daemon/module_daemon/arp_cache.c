@@ -12,17 +12,17 @@ struct arp_entry *arp_cache_head = NULL;
 
 struct arp_entry arp_cache[MAX_ARP_CACHE_SIZE];
 
-void lookup_element_to_cache(const char* ip, const char* mac) {
+void lookup_element_to_cache(char* ip, unsigned char* mac) {
     struct arp_entry *entry = &arp_cache[arp_cache_size];
     strcpy(entry->ip_addr, ip);
-    strcpy(entry->mac_addr, mac);
+    memcpy(entry->mac_addr, mac, 6);
     entry->timestamp = time(NULL);
     
     arp_cache_size++;
     HASH_ADD_STR(arp_cache_head, ip_addr, entry);
 }
 
-char* get_element_from_cache(const char* ip) {
+char* get_element_from_cache(char* ip) {
     struct arp_entry *entry;
     HASH_FIND_STR(arp_cache_head, ip, entry);
     if (entry != NULL) {

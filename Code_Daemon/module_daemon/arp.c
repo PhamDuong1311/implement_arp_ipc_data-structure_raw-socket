@@ -5,6 +5,10 @@ Codespaces sẽ không có quyền truy cập vào các card vật lý thật (c
 hay Ethernet) mà chỉ được setup trên interface ảo (eth0, docker0, lo ảo),
 mà mục tiêu đề ra đó là implement ARP trên 1 máy có sử dụng 2 card wifi
 => sử dụng Codespaces bất khả thi => phải cài trực tiếp linux :< => xử lý sau...
+
+Thêm nữa, lý do mặc dù dùng card wifi mà vẫn dùng các thư viện của ethernet bởi vì
+packet sau khi đi vào card nó sẽ tự convert wifi header thành ethernet header (bỏ đi các field không cần thiết của wifi)
+=> có thể dùng card wifi với các include của ethernet :>
 */
 
 #include "arp.h"
@@ -15,9 +19,10 @@ mà mục tiêu đề ra đó là implement ARP trên 1 máy có sử dụng 2 c
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <net/if.h>
-#include <netpacket/packet.h>
 #include <linux/if_ether.h>
 #include <linux/if_arp.h>
+
+char mac_target[6] = "";
 
 struct interface_info get_src_addr(const char *iface) {
     struct ifreq ifr;
@@ -85,11 +90,11 @@ void send_arp_request(const char *iface, const char *target_ip) {
         exit(EXIT_FAILURE);
     }
 
-    printf("ARP Request sent for IP: %s\n", target_ip);
+    printf("ARP Request sent from %s for IP: %s\n", iface, target_ip);
     close(sockfd);
 }
 
-void receive_arp_reply() {
+void receive_arp_reply(const char *iface) {
     struct arp_header arp_resp;
     int sockfd;
     struct sockaddr_ll sa;
@@ -98,6 +103,16 @@ void receive_arp_reply() {
     sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
     if (sockfd == -1) {
         perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    memset(&sa, 0, sizeof(sa));
+    sa.sll_protocol = htons(ETH_P_ARP);
+
+    sa.sll_ifindex = if_nametoindex(iface);
+    if (sa.sll_ifindex == 0) {
+        perror("Failed to get interface index");
+        close(sockfd);
         exit(EXIT_FAILURE);
     }
 
@@ -110,13 +125,16 @@ void receive_arp_reply() {
         }
 
         if (ntohs(arp_resp.opcode) == 2) {
-            printf("ARP Reply received: IP %d.%d.%d.%d is at MAC ", 
+            printf("ARP Reply received on %s: IP %d.%d.%d.%d is at MAC ", 
+                   iface,
                    arp_resp.sender_ip[0], arp_resp.sender_ip[1],
                    arp_resp.sender_ip[2], arp_resp.sender_ip[3]);
             printf("%02x:%02x:%02x:%02x:%02x:%02x\n", 
                    arp_resp.sender_mac[0], arp_resp.sender_mac[1],
                    arp_resp.sender_mac[2], arp_resp.sender_mac[3],
                    arp_resp.sender_mac[4], arp_resp.sender_mac[5]);
+            
+            memcpy(mac_target, arp_resp.sender_mac, 6);
             break;  
         }
     }

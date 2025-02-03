@@ -3,6 +3,8 @@
 
 #define MQ_NAME "/my_mq"
 
+extern char ip_target[256];
+
 struct msgbuf {
     long mtype;
     char mtext[100];
