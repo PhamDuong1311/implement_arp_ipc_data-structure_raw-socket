@@ -158,4 +158,18 @@ struct arp_entry {
 ### 2.9 Prerequisites
 ### 2.10 File Description
 ### 2.11 Running the code
+- Chạy **Daemon process** ở Terminal 1:
+  - $ cd Code_Daemon
+  - $ make
+  - sudo ./daemon
+  - Ở trong **arp cache table** đã lưu trữ sẵn địa chỉ `(192.168.1.1, 11:22:33:44:55:66)` để test
+- Chạy **CLI process** ở Terminal 2:
+  - $ cd Code_CLI
+  - $ make
+  - $ ./cli
+  - Nhập input là địa chỉ IP đích cần truy vấn (giả sử muốn test với địa chỉ IP lưu sẵn là `192.168.1.1`)
+ 
+=> Input ở Terminal 2 là địa chỉ MAC đích.
+
+- Vấn đề chưa giải quyết: Em đã test hết các module ở trong Daemon và đã chạy thành công, chỉ có module `(arp.c, arp.h)` là chưa test được vì em chưa cài linux để bắt bản tin arp giữa 2 máy => em lưu trữ sẵn 1 cặp địa chỉ IP, MAC vào **arp cache table** sẵn để test => đã hoàn thành.
 
