@@ -22,7 +22,7 @@ packet sau khi đi vào card nó sẽ tự convert wifi header thành ethernet h
 #include <linux/if_ether.h>
 #include <linux/if_arp.h>
 
-char mac_target[6] = "";
+uint8_t mac_target[6] = "";
 
 struct interface_info get_src_addr(const char *iface) {
     struct ifreq ifr;

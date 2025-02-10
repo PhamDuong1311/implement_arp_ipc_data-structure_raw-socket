@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-extern char mac_target[6];
+extern uint8_t mac_target[6];
 
 struct arp_header {
     uint16_t hw_type;
