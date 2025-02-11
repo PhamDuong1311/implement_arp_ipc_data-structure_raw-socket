@@ -14,18 +14,30 @@ char ip_target[256] = "";
 
 
 void create_daemon(void) {
-    pid_t pid = fork();
-
+    pid_t pid, sid;
+    
+    pid = fork();
     if (pid < 0) {
         perror("Fork failed");
         exit(EXIT_FAILURE);
     }
-
     if (pid > 0) {
         exit(EXIT_SUCCESS);  
     }
 
-    if (setsid() < 0) {
+    pid = fork();
+    if (pid < 0) {
+        perror("Fork failed");
+        exit(EXIT_FAILURE);
+    }
+    if (pid > 0) {
+        exit(EXIT_SUCCESS);  
+    }
+    
+    umask(0);
+
+    sid = setsid();
+    if (sid < 0) {
         perror("setsid failed");
         exit(EXIT_FAILURE);
     }
