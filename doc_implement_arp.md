@@ -48,9 +48,9 @@ Project này sẽ triển khai giao thức **ARP** trong **userspace**, sử d�
 - etc... 
 ## 2. Design
 ### 2.1 Context
-Để các thiết bị có thể liên lạc với nhau trong cùng 1 **LAN**, chúng phải dựa **L2 header** để biết được địa chỉ **MAC** của nhau, vậy làm thé nào biết được địa chỉ **MAC** của nhau khi chúng ta đã có trong tay địa chỉ **IP** => dựa vào **ARP protocol**. **ARP** là một giao thức mạng giúp ánh xạ địa chỉ **IP** sang địa chỉ **MAC** (Media Access Control) trong mạng cục bộ (**LAN**). Ở trong sản phầm này, em sẽ sử dụng 2 loại process: **Daemon process** và **CLI process**. Người dùng nhập vào địa chỉ **IP** cần truy vấn tại chương trình chạy ở **CLI process**, **CLI** sẽ gửi thông báo tới **Daemon** yêu cầu truy vấn ra địa chỉ **MAC** phù hợp. Nếu giả sử tại **Daemon** đã lưu trữ sẵn **MAC** tương ứng với **IP** thì ngay lập tức nó sẽ gửi lại **MAC** cho **CLI** và hiển thị kết quả. Còn nếu không tìm thấy **MAC** phù hợp, **Daemon** sẽ gửi 1 **ARP request** ra ngoài để yêu cầu nhận được **MAC** của thiết bị tương thích và **ARP reply** lại **MAC** đó, cuối cùng là gửi lại kết quả cho **CLI**.
+Để các thiết bị có thể liên lạc với nhau trong cùng 1 **LAN**, chúng phải dựa **L2 header** để biết được địa chỉ **MAC** của nhau, vậy làm thé nào biết được địa chỉ **MAC** của nhau khi chúng ta đã có trong tay địa chỉ **IP** => dựa vào **ARP protocol**. **ARP** là một giao thức mạng giúp ánh xạ địa chỉ **IP** sang địa chỉ **MAC** (Media Access Control) trong mạng cục bộ (**LAN**). Ở trong phần mềm này, em sẽ sử dụng 2 loại process: **Daemon process** và **CLI process**. Người dùng nhập vào địa chỉ **IP** cần truy vấn tại chương trình chạy ở **CLI process**, **CLI** sẽ gửi thông báo tới **Daemon** yêu cầu truy vấn ra địa chỉ **MAC** phù hợp. Nếu giả sử tại **Daemon** đã lưu trữ sẵn **MAC** tương ứng với **IP** thì ngay lập tức nó sẽ gửi lại **MAC** cho **CLI** và hiển thị kết quả. Còn nếu không tìm thấy **MAC** phù hợp, **Daemon** sẽ gửi 1 **ARP request** ra ngoài để yêu cầu nhận được **MAC** của thiết bị tương thích và **ARP reply** lại **MAC** đó, cuối cùng là gửi lại kết quả cho **CLI**. Ngoài ra phần mềm còn có những tính năng thao tác và hiển thị **ARP cache table**.
 ### 2.2 Logical
-- **Daemon**: Daemon sẽ lắng nghe thông báo (địa chỉ IP) từ các CLI, gửi lại kết quả (địa chỉ MAC tương ứng) sau khi lấy được thông tin của inteface cụ thể, lưu trữ kết quả vào ARP cache, và thực hiện việc timeout cho ARP cache table.
+- **Daemon**: Daemon sẽ lắng nghe thông báo (địa chỉ IP, yêu cầu thao tác với ARP cache) từ các CLI, gửi lại kết quả tương ứng sau khi lấy được thông tin của inteface cụ thể, lưu trữ kết quả vào ARP cache, và thực hiện việc timeout cho ARP cache table.
 - **CLI**: CLI cho phép người dùng gửi thông báo tới daemon để nhận lại kết quả.
 - **ARP Cache**: Lưu trữ các ánh xạ IP-MAC trong một thời gian nhất định (15 giây) để tái sử dụng.
 - **Giao tiếp giữa daemon và CLI**: CLIs gửi thông báo đến daemon thông qua cơ chế IPC (Inter-process communication) và daemon sẽ phản hồi lại kết quả cho từng CLI.
@@ -64,7 +64,7 @@ Project này sẽ triển khai giao thức **ARP** trong **userspace**, sử d�
   + CLIs sẽ nhận lệnh từ người dùng để thông báo tới daemon.
   + CLIs sẽ hiển thị kết quả mà daemon trả lại.
 - **Giao tiếp IPC**:
-  + Sử dụng TCP socket để có thể giao tiếp được giữa các process trên cùng máy hoặc khác máy.
+  + Sử dụng Unix domain socket để có thể giao tiếp Daemon với nhiều CLI thông qua `select()` hoặc `epoll()`.
 - **Cơ chế ioctl**:
   + Sử dụng `ioctl` để tương tác với giao diện mạng của hệ thống và thực hiện việc gửi ARP request.
 - **Cơ chế nhận packet**:
@@ -75,7 +75,7 @@ Project này sẽ triển khai giao thức **ARP** trong **userspace**, sử d�
 ![image](https://github.com/user-attachments/assets/de17fca0-b4f2-4f57-98fe-48356cee1c4e)
 
 
-- **CLI gửi thông báo**: Người dùng nhập lệnh trong CLI (có địa chỉ IP đích), CLI gửi thông báo qua IPC tới daemon.
+- **CLI gửi thông báo**: Người dùng nhập lệnh trong CLI, CLI gửi thông báo qua IPC tới daemon.
 - **Daemon nhận thông báo**: Daemon nhận thông báo từ CLI, kiểm tra địa chỉ CLI yêu cầu xem có trong ARP cache không, nếu không thì tiến hành gửi ARP Request tới các interface mạng của hệ thống.
 - **Daemon nhận ARP Reply**: Daemon nhận ARP Reply từ thiết bị mạng với IP-MAC cần thiết.
 - **Daemon trả kết quả cho CLI**: Daemon gửi kết quả (MAC) về cho CLI.
@@ -99,17 +99,14 @@ Project này sẽ triển khai giao thức **ARP** trong **userspace**, sử d�
 
 ### 2.7 Features
 #### a. Giao tiếp giữa Daemon và CLI
-Sử dụng **TCP socket** vì **TCP** là giao thức **connection-oriented** và có cơ chế quản lý dữ liệu chặt chẽ:
+Sử dụng **Unix domain socket** vì:
 - **Buffer trên Kernel (Backlog)**:
  - Khi nhiều **CLI** gửi đến cùng lúc, các kết nối được xếp vào **queue** (backlog) của `listen()`.
  - Mặc định, chỉ khi **queue** này đầy, các kết nối mới bị từ chối.
 - **Kết nối độc lập**:
  - Mỗi khi **Daemon** `accept()`, mỗi yêu cầu của **CLI** sẽ được gán một **socket** riêng (**file descriptor** riêng).
  - Các kết nối hoạt động độc lập, dữ liệu từ **CLI A** không bao giờ lẫn với **CLI B**.
-- **Cơ chế TCP Reliable**:
- - **TCP** đảm bảo dữ liệu không bị mất, không bị lẫn, và đến đúng thứ tự.
-- Hơn nữa **TCP socket** có thể giao tiếp giữa các process trên cùng 1 máy hoặc các máy khác nhau.
-- Sử dụng `select()` hoặc `poll()` để **daemon** có thể xử lý nhiều **CLI**.
+- Sử dụng `select()` hoặc `epoll()` để **daemon** có thể xử lý nhiều **CLI**.
 
 #### b. ARP cache
 
