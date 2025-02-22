@@ -70,10 +70,47 @@ void receive_msg_from_daemon(const char *name) {
     mq_close(mq);
 }
 
-int main() {
-    init_ipc_cli(MQ_NAME);
-    send_msg_to_daemon(MQ_NAME);
+void show_help() {
+    printf("Usage: arp [options]\n");
+    printf("Options:\n");
+    printf("  -s <IP> <MAC>   Add an entry to the ARP cache\n");
+    printf("  -d <IP>         Delete an entry from the ARP cache\n");
+    printf("  -a              Show all ARP cache entries\n");
+    printf("  -h              Show help\n");
+}
 
-    receive_msg_from_daemon(MQ_NAME);
-    return 0;
+int main(int argc, char *argv[]) {
+    int opt;
+    char *ip = NULL, *mac = NULL;
+
+    while ((opt = getopt(argc, argv, "s:d:ah")) != -1) {
+        switch (opt) {
+            case 's':  // -s <IP> <MAC>
+                if (optind + 1 < argc) {
+                    ip = optarg;
+                    mac = argv[optind];
+                    printf("Adding ARP entry: IP=%s, MAC=%s\n", ip, mac);
+                    optind++; // Tiến tới tham số tiếp theo
+                } else {
+                    fprintf(stderr, "Error: -s requires an IP and MAC address\n");
+                    return EXIT_FAILURE;
+                }
+                break;
+            case 'd':  // -d <IP>
+                ip = optarg;
+                printf("Deleting ARP entry for IP: %s\n", ip);
+                break;
+            case 'a':  // -a
+                printf("Displaying all ARP cache entries\n");
+                break;
+            case 'h':  // -h
+                show_help();
+                return EXIT_SUCCESS;
+            default:
+                show_help();
+                return EXIT_FAILURE;
+        }
+    }
+
+    return EXIT_SUCCESS;
 }
