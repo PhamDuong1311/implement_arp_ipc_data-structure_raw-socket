@@ -1,14 +1,12 @@
 #ifndef CLI_H
 #define CLI_H
 
-#define MQ_NAME "/my_mq"
+#define SOCKET_PATH "/tmp/arp_socket"
 
-struct msgbuf {
-    long mtype;
-    char mtext[100];
-};
+int setup_socket();
+void send_request(int sockfd, const char *message);
+void receive_response(int sockfd);
+void show_help();
 
-void init_ipc_cli(const char *name);
-void send_msg_to_daemon(const char *name);
-void receive_msg_from_daemon(const char *name);
 #endif
+

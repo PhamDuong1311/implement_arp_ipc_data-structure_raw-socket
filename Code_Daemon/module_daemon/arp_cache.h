@@ -20,6 +20,8 @@ extern struct arp_entry *arp_cache_head;
 extern struct arp_entry arp_cache[MAX_ARP_CACHE_SIZE];
 
 void lookup_element_to_cache(char* ip, unsigned char* mac);
+void show_arp_cache(char *response, size_t response_size);
+void delete_element_from_cache(char* ip);
 unsigned char* get_element_from_cache(char* ip);
 
 #endif

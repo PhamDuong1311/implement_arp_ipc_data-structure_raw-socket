@@ -1,115 +1,147 @@
-// Đã test
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <mqueue.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include "ipc_daemon.h"
+#include "arp_cache.h"
 
-char ip_target[256] = "";
 
-
-void create_daemon(void) {
-    pid_t pid, sid;
-    
-    pid = fork();
+void create_daemon() {
+    pid_t pid = fork();
     if (pid < 0) {
         perror("Fork failed");
         exit(EXIT_FAILURE);
     }
     if (pid > 0) {
-        exit(EXIT_SUCCESS);  
+        exit(EXIT_SUCCESS);
     }
 
-    pid = fork();
-    if (pid < 0) {
-        perror("Fork failed");
-        exit(EXIT_FAILURE);
-    }
-    if (pid > 0) {
-        exit(EXIT_SUCCESS);  
-    }
-    
-    umask(0);
-
-    sid = setsid();
-    if (sid < 0) {
+    if (setsid() < 0) {
         perror("setsid failed");
         exit(EXIT_FAILURE);
     }
 
-    if (chdir("/") < 0) {
-        perror("chdir failed");
+    pid = fork();
+    if (pid < 0) {
+        perror("Fork failed");
         exit(EXIT_FAILURE);
     }
+    if (pid > 0) {
+        exit(EXIT_SUCCESS);
+    }
+
+    umask(0);
+    chdir("/");
 
     for (int i = 0; i < 3; i++) {
-        close(i);  
+        close(i);
     }
-
-    printf("Daemon created\n");
 }
 
-void init_ipc_daemon(const char *name) {
-    mqd_t mq = mq_open(name, O_CREAT | O_RDWR, 0666, NULL);
-    if (mq == (mqd_t) -1) {
-        perror("mq_open failed");
+int setup_socket() {
+    int server_sock;
+    struct sockaddr_un server_addr;
+
+    unlink(SOCKET_PATH);
+
+    server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (server_sock == -1) {
+        perror("socket failed");
         exit(EXIT_FAILURE);
     }
-    printf("Message Queue created\n");
 
-    mq_close(mq);
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sun_family = AF_UNIX;
+    strncpy(server_addr.sun_path, SOCKET_PATH, sizeof(server_addr.sun_path) - 1);
+
+    if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
+        perror("bind failed");
+        close(server_sock);
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(server_sock, 5) == -1) {
+        perror("listen failed");
+        close(server_sock);
+        exit(EXIT_FAILURE);
+    }
+
+    return server_sock;
 }
 
-void send_msg_to_cli(const char *name, char* msg) {
-    mqd_t mq = mq_open(name, O_WRONLY);
-    if (mq == (mqd_t) -1) {
-        perror("mq_open failed");
+void send_response(int client_sock, const char *message) {
+    if (send(client_sock, message, strlen(message), 0) == -1) {
+        perror("send failed");
+        close(client_sock);
         exit(EXIT_FAILURE);
     }
-
-    struct msgbuf message;
-    message.mtype = 1;  
-    strcpy(message.mtext, msg);
-
-    if (mq_send(mq, (const char*)&message, sizeof(message.mtext), 0) == -1) {
-        perror("mq_send failed");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("MAC address target sent to CLI: %s\n", message.mtext);
-
-    mq_close(mq);
+    close(client_sock);    
 }
 
-void receive_msg_from_cli(const char *name) {
-    mqd_t mq = mq_open(MQ_NAME, O_RDONLY);
-    if (mq == (mqd_t) -1) {
-        perror("mq_open failed");
-        exit(EXIT_FAILURE);
-    }
+void process_request(int client_sock, const char *buffer) {
+    printf ("------------------------------------------------------\n");
+    printf("Received command: %s\n", buffer);
 
-    struct mq_attr attr;
-    if (mq_getattr(mq, &attr) == -1) {
-        perror("mq_getattr failed");
-        exit(EXIT_FAILURE);
-    }
+    if (strncmp(buffer, "ADD", 3) == 0) {
+        char ip[16], mac_str[18];
+        unsigned char mac[6];
 
-    struct msgbuf message;
-    ssize_t bytes_read = mq_receive(mq, (char*)&message, attr.mq_msgsize, NULL); 
-    if (bytes_read == -1) {
-        perror("mq_receive failed");
-        exit(EXIT_FAILURE);
+        if (sscanf(buffer, "ADD %15s %17s", ip, mac_str) == 2) {
+            if (sscanf(mac_str, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
+                       &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]) == 6) {
+                lookup_element_to_cache(ip, mac);
+                send_response(client_sock, "ARP entry added");
+            } else {
+                send_response(client_sock, "Invalid MAC address format");
+            }
+        } else {
+            send_response(client_sock, "Invalid ADD command format");
+        }
+    } else if (strncmp(buffer, "DELETE", 6) == 0) {
+        char ip[16];
+        if (sscanf(buffer, "DELETE %15s", ip) == 1) {
+            delete_element_from_cache(ip);
+            send_response(client_sock, "ARP entry deleted");
+        } else {
+            send_response(client_sock, "Invalid DELETE command format");
+        }
+    } else if (strcmp(buffer, "SHOW") == 0) {
+        
+        char response[1024];
+        show_arp_cache(response, 1023);
+        send_response(client_sock, response);
+    } else {
+        send_response(client_sock, "Unknown command");
     }
+}
+
+
+void receive_request(int server_sock) {
+    struct sockaddr_un client_addr;
+    socklen_t client_addr_len = sizeof(client_addr);
+    int client_sock;
     
-    strncpy(ip_target, message.mtext, sizeof(ip_target) - 1);
-    ip_target[sizeof(ip_target) - 1] = '\0'; 
+    while (1) {
+        client_sock = accept(server_sock, (struct sockaddr *)&client_addr, &client_addr_len);
+        if (client_sock == -1) {
+            perror("accept failed");
+            continue;
+        }
 
-    printf("IP address received from CLI: %s\n", message.mtext);
+        char buffer[256];
+        int bytes_received = recv(client_sock, buffer, sizeof(buffer) - 1, 0);
+        if (bytes_received > 0) {
+            buffer[bytes_received] = '\0';
+            process_request(client_sock, buffer);
+        }
 
-    mq_close(mq);
+        close(client_sock);
+    }
 }
+
+

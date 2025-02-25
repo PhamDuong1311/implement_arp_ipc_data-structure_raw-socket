@@ -1,18 +1,12 @@
-#ifndef IPC_DAEMON_H
-#define IPC_DAEMON_H
+#ifndef DAEMON_H
+#define DAEMON_H
 
-#define MQ_NAME "/my_mq"
+#define SOCKET_PATH "/tmp/arp_socket"
 
-extern char ip_target[256];
+void create_daemon();
+int setup_socket();
+void receive_request(int server_sock);
+void send_response(int client_sock, const char *message);
+void process_request(int client_sock, const char *buffer);
 
-struct msgbuf {
-    long mtype;
-    char mtext[100];
-};
-
-void create_daemon(void);
-void init_ipc_daemon(const char *name);
-void send_msg_to_cli(const char *name, char *msg);
-void receive_msg_from_cli(const char *name);
-
-#endif
+#endif 

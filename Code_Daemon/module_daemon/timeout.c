@@ -4,8 +4,7 @@
 #include "arp_cache.h"
 #include <time.h>
 
-struct arp_entry arp_cache[MAX_ARP_CACHE_SIZE];
-int arp_cache_size;
+
 
 void remove_element_expired(int arp_cache_size, struct arp_entry arp_cache[]) {
     for (int i = 0; i < arp_cache_size; i++) {
