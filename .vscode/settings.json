@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "arp_cache.h": "c",
+        "timeout.h": "c"
+    }
+}

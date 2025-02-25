@@ -20,6 +20,6 @@ void remove_element_expired(int arp_cache_size, struct arp_entry arp_cache[]) {
 
 int is_element_expired(time_t timestamp) {
     time_t current_time = time(NULL);
-    if ((current_time - timestamp) > 15) return 1;
+    if ((current_time - timestamp) > 1) return 1;
     return 0; 
 }

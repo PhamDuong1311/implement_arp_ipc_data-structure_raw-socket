@@ -84,7 +84,7 @@ void send_response(int client_sock, const char *message) {
 }
 
 void process_request(int client_sock, const char *buffer) {
-    printf ("------------------------------------------------------\n");
+    printf ("\n------------------------------------------------------\n");
     printf("Received command: %s\n", buffer);
 
     if (strncmp(buffer, "ADD", 3) == 0) {
@@ -97,9 +97,11 @@ void process_request(int client_sock, const char *buffer) {
                 lookup_element_to_cache(ip, mac);
                 send_response(client_sock, "ARP entry added");
             } else {
+                printf("Invalid MAC address format\n");
                 send_response(client_sock, "Invalid MAC address format");
             }
         } else {
+            printf("Invalid ADD command format\n");
             send_response(client_sock, "Invalid ADD command format");
         }
     } else if (strncmp(buffer, "DELETE", 6) == 0) {

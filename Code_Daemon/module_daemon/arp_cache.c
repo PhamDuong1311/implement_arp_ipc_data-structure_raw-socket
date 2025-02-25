@@ -49,16 +49,22 @@ void show_arp_cache(char *response, size_t response_size) {
     struct arp_entry *entry, *tmp;
 
     HASH_ITER(hh, arp_cache_head, entry, tmp) {
-        char entry_str[64];
-        snprintf(entry_str, sizeof(entry_str), "%s -> %02X:%02X:%02X:%02X:%02X:%02X\n",
+        char entry_str[150];
+        char time_str[30];
+
+        struct tm *tm_info = localtime(&entry->timestamp);
+        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", tm_info);
+
+        snprintf(entry_str, sizeof(entry_str), "%s -> %02X:%02X:%02X:%02X:%02X:%02X | Last seen: %s\n",
                  entry->ip_addr,
                  entry->mac_addr[0], entry->mac_addr[1], entry->mac_addr[2],
-                 entry->mac_addr[3], entry->mac_addr[4], entry->mac_addr[5]);
+                 entry->mac_addr[3], entry->mac_addr[4], entry->mac_addr[5],
+                 time_str);
+
         strncat(response, entry_str, response_size - strlen(response) - 1);
     }
     printf("Sent ARP table\n");
 }
-
 
 void delete_element_from_cache(char* ip) {
     struct arp_entry *entry;
