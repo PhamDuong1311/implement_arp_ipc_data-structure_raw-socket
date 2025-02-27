@@ -94,9 +94,9 @@ void remove_element_expired() {
     time_t current_time = time(NULL);
 
     HASH_ITER(hh, arp_cache_head, entry, tmp) {
-        if ((current_time - entry->timestamp) > 2) { // Kiểm tra mục đã hết hạn
-            HASH_DEL(arp_cache_head, entry);  // Xóa khỏi hash table
-            arp_cache_size--;  // Cập nhật kích thước cache
+        if ((current_time - entry->timestamp) > 2) { 
+            HASH_DEL(arp_cache_head, entry); 
+            arp_cache_size--;  
             printf("Đã xóa ARP entry hết hạn: %s\n", entry->ip_addr);
         }
     }
@@ -106,28 +106,27 @@ void remove_element_expired() {
 int is_element_expired(time_t timestamp) {
     time_t current_time = time(NULL);
     
-    if ((current_time - timestamp) > 1) return 1;
+    if ((current_time - timestamp) > 15) return 1;
     return 0; 
 }
 
-int main() {
-    unsigned char mac1[6] = {0x11, 0x11, 0x11, 0x11, 0x11, 0x11};
-    unsigned char mac2[6] = {0x22, 0x22, 0x22, 0x22, 0x22, 0x22};
+// int main() {
+//     unsigned char mac1[6] = {0x11, 0x11, 0x11, 0x11, 0x11, 0x11};
+//     unsigned char mac2[6] = {0x22, 0x22, 0x22, 0x22, 0x22, 0x22};
 
-    lookup_element_to_cache("111.111.111.111", mac1);
-    lookup_element_to_cache("222.222.222.222", mac2);
+//     lookup_element_to_cache("111.111.111.111", mac1);
+//     lookup_element_to_cache("222.222.222.222", mac2);
 
-    char response[1000];
-    show_arp_cache(response, sizeof(response));
-    printf("%s\n", response);
+//     char response[1000];
+//     show_arp_cache(response, sizeof(response));
+//     printf("%s\n", response);
 
-    printf("Chờ 5 giây để mục hết hạn...\n");
-    sleep(5);
+//     printf("Chờ 5 giây để mục hết hạn...\n");
+//     sleep(2);
 
-    remove_element_expired();
+//     remove_element_expired();
     
-    show_arp_cache(response, sizeof(response));
-    printf("%s\n", response);
-
-    return 0;
-}
+//     show_arp_cache(response, sizeof(response));
+//     printf("%s\n", response);
+//     return 0;
+// }

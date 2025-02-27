@@ -76,7 +76,6 @@ void displayQueue(Queue *q) {
     }
 }
 
-// Kiểm tra hoạt động của Queue
 int main() {
     Queue q;
     initQueue(&q);
