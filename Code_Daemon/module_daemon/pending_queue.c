@@ -2,21 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#define QUEUE_SIZE 10  
-
-typedef struct {
-    char ip[16];      
-    unsigned char mac[6]; 
-    time_t timestamp;        
-    int count2;             
-    int status;              
-} QueueItem;
-
-typedef struct {
-    QueueItem items[QUEUE_SIZE]; 
-    int front, rear, size;       
-} Queue;
+#include "pending_queue.h"
 
 void initQueue(Queue *q) {
     q->front = 0;
@@ -40,7 +26,7 @@ void enqueue(Queue *q, const char *ip, const unsigned char *mac, int count2, int
 
     q->rear = (q->rear + 1) % QUEUE_SIZE;
     strcpy(q->items[q->rear].ip, ip);
-    memcpy(q->items[q->rear].mac, mac, MAC_LEN);
+    memcpy(q->items[q->rear].mac, mac, 6);
     q->items[q->rear].timestamp = time(NULL);
     q->items[q->rear].count2 = count2;
     q->items[q->rear].status = status;
@@ -95,19 +81,15 @@ int main() {
     Queue q;
     initQueue(&q);
 
-    // Địa chỉ MAC mẫu
     unsigned char mac1[6] = {0x00, 0x1A, 0x2B, 0x3C, 0x4D, 0x5E};
     unsigned char mac2[6] = {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA};
 
-    // Thêm phần tử vào queue
     enqueue(&q, "192.168.1.1", mac1, 5, 1);
     enqueue(&q, "192.168.1.2", mac2, 3, 0);
 
-    // Hiển thị queue
     printf("\nQueue sau khi thêm phần tử:\n");
     displayQueue(&q);
 
-    // Tìm kiếm phần tử trong queue
     QueueItem *found = findInQueue(&q, "192.168.1.1");
     if (found) {
         printf("\nTìm thấy IP: %s, Count2: %d, Status: %d\n", found->ip, found->count2, found->status);
@@ -115,7 +97,6 @@ int main() {
         printf("\nKhông tìm thấy IP\n");
     }
 
-    // Xóa một phần tử
     printf("\nQueue sau khi dequeue:\n");
     dequeue(&q);
     displayQueue(&q);
