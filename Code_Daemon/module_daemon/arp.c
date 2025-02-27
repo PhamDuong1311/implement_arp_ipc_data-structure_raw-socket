@@ -9,6 +9,7 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <linux/if_packet.h>
+#include "arp.h"
 
 
 
@@ -51,7 +52,7 @@ int get_ip_address(const char *iface, uint8_t *ip) {
 }
 
 
-void send_arp_request(const char *ifaceA, const char *ifaceB, const char *target_ip) {
+void send_arp_request(const char *iface, uint8_t *src_mac, uint8_t *src_ip, const char *target_ip) {
     int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
     if (sockfd < 0) {
         perror("Socket error");
@@ -59,7 +60,7 @@ void send_arp_request(const char *ifaceA, const char *ifaceB, const char *target
     }
 
     struct ifreq ifr;
-    strncpy(ifr.ifr_name, ifaceA, IFNAMSIZ);
+    strncpy(ifr.ifr_name, iface, IFNAMSIZ);
     if (ioctl(sockfd, SIOCGIFINDEX, &ifr) < 0) {
         perror("ioctl error");
         close(sockfd);
@@ -72,11 +73,6 @@ void send_arp_request(const char *ifaceA, const char *ifaceB, const char *target
     struct ether_header eth;
     struct arp_header arp;
     uint8_t packet[42];  
-
-    uint8_t src_mac[6], src_ip[4];
-    get_mac_address(ifaceA, src_mac);
-    get_ip_address(ifaceA, src_ip);
-
 
     memset(eth.ether_dhost, 0xFF, 6); 
     memcpy(eth.ether_shost, src_mac, 6);
@@ -106,14 +102,14 @@ void send_arp_request(const char *ifaceA, const char *ifaceB, const char *target
     if (sendto(sockfd, packet, sizeof(packet), 0, (struct sockaddr *)&socket_address, sizeof(socket_address)) < 0) {
         perror("Sendto error");
     } else {
-        printf("ARP Request sent from %s to %s\n", ifaceA, target_ip);
+        printf("ARP Request sent from %s to %s\n", iface, target_ip);
     }
 
     close(sockfd);
 }
 
 
-void receive_arp_reply(const char *ifaceB) {
+void receive_arp_reply(const char *iface) {
     int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
     if (sockfd < 0) {
         perror("Socket error");
@@ -142,18 +138,3 @@ void receive_arp_reply(const char *ifaceB) {
     close(sockfd);
 }
 
-int main(int argc, char *argv[]) {
-    if (argc != 4) {
-        printf("Usage: %s <interfaceA> <interfaceB> <target_ip>\n", argv[0]);
-        return 1;
-    }
-
-    char *ifaceA = argv[1];
-    char *ifaceB = argv[2];
-    char *target_ip = argv[3];
-
-    send_arp_request(ifaceA, ifaceB, target_ip);
-    receive_arp_reply(ifaceB);
-
-    return 0;
-}

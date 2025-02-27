@@ -112,6 +112,13 @@ void process_request(int client_sock, const char *buffer) {
         } else {
             send_response(client_sock, "Invalid DELETE command format");
         }
+    } else if (strncmp(buffer, "FIND", 6) == 4) {
+        char ip[16];
+        if (sscanf(buffer, "DELETE %15s", ip) == 1) {
+		
+        } else {
+            send_response(client_sock, "Invalid FIND command format");
+        }
     } else if (strcmp(buffer, "SHOW") == 0) {
         
         char response[1024];

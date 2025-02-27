@@ -50,6 +50,7 @@ void show_help() {
     printf("  -a <IP> <MAC>   Add an entry to the ARP cache\n");
     printf("  -d <IP>         Delete an entry from the ARP cache\n");
     printf("  -s              Show all ARP cache entries\n");
+    printf("  -f <IP>         Find MAC address of other device\n);
     printf("  -h              Show help\n");
 }
 
@@ -63,7 +64,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    while ((opt = getopt(argc, argv, "a:d:sh")) != -1) {
+    while ((opt = getopt(argc, argv, "a:d:sf:h")) != -1) {
         int sockfd = setup_socket();  
         switch (opt) {
             case 'a':
@@ -84,6 +85,11 @@ int main(int argc, char *argv[]) {
                 break;
             case 's':
                 strcpy(message, "SHOW");
+                send_request(sockfd, message);  
+                receive_response(sockfd);
+                break;
+            case 'f':
+                snprintf(message, sizeof(message), "FIND %s", optarg);
                 send_request(sockfd, message);  
                 receive_response(sockfd);
                 break;
