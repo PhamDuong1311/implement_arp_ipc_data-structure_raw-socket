@@ -11,47 +11,6 @@
 #include <linux/if_packet.h>
 #include "arp.h"
 
-
-
-int get_mac_address(const char *iface, uint8_t *mac) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-        perror("Socket error");
-        return -1;
-    }
-    struct ifreq ifr;
-    strncpy(ifr.ifr_name, iface, IFNAMSIZ);
-    if (ioctl(sock, SIOCGIFHWADDR, &ifr) < 0) {
-        perror("ioctl error");
-        close(sock);
-        return -1;
-    }
-    memcpy(mac, ifr.ifr_hwaddr.sa_data, 6);
-    close(sock);
-    return 0;
-}
-
-
-int get_ip_address(const char *iface, uint8_t *ip) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-        perror("Socket error");
-        return -1;
-    }
-    struct ifreq ifr;
-    strncpy(ifr.ifr_name, iface, IFNAMSIZ);
-    if (ioctl(sock, SIOCGIFADDR, &ifr) < 0) {
-        perror("ioctl error");
-        close(sock);
-        return -1;
-    }
-    struct sockaddr_in *addr = (struct sockaddr_in *)&ifr.ifr_addr;
-    memcpy(ip, &addr->sin_addr, 4);
-    close(sock);
-    return 0;
-}
-
-
 void send_arp_request(const char *iface, uint8_t *src_mac, uint8_t *src_ip, const char *target_ip) {
     int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
     if (sockfd < 0) {

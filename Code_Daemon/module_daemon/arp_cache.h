@@ -23,5 +23,7 @@ void lookup_element_to_cache(char* ip, unsigned char* mac);
 void show_arp_cache(char *response, size_t response_size);
 void delete_element_from_cache(char* ip);
 unsigned char* get_element_from_cache(char* ip);
+void remove_element_expired(int arp_cache_size, struct arp_entry arp_cache[]);
+int is_element_expired(time_t timestamp);
 
 #endif

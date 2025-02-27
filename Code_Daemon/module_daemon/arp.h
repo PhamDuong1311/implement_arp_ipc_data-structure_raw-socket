@@ -17,10 +17,6 @@ struct arp_header {
     uint8_t tpa[4]; 
 };
 
-
-
-int get_mac_address(const char *iface, uint8_t *mac);
-int get_ip_address(const char *iface, uint8_t *ip);
 void send_arp_request(const char *iface, uint8_t *src_mac, uint8_t *src_ip, const char *target_ip);
 void receive_arp_reply(const char *iface);
 #endif

@@ -50,7 +50,7 @@ void show_help() {
     printf("  -a <IP> <MAC>   Add an entry to the ARP cache\n");
     printf("  -d <IP>         Delete an entry from the ARP cache\n");
     printf("  -s              Show all ARP cache entries\n");
-    printf("  -f <IP>         Find MAC address of other device\n);
+    printf("  -f <IP>         Find MAC address of other device\n");
     printf("  -h              Show help\n");
 }
 

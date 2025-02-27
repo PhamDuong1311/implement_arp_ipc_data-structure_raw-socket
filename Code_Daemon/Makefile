@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -pthread -lrt
 
-SRC = daemon.c  module_daemon/arp.c module_daemon/arp_cache.c module_daemon/ipc_daemon.c module_daemon/timeout.c
+SRC = daemon.c module_daemon/pending_queue.c module_daemon/main_thread.c module_daemon/arp.c module_daemon/arp_cache.c module_daemon/ipc_daemon.c
 OBJ = $(SRC:.c=.o)
 TARGET = daemon
 

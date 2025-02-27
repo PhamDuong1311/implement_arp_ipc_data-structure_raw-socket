@@ -7,9 +7,7 @@
 #include "arp_cache.h"
 
 int arp_cache_size = 0;
-
 struct arp_entry *arp_cache_head = NULL;
-
 struct arp_entry arp_cache[MAX_ARP_CACHE_SIZE];
 
 void lookup_element_to_cache(char* ip, unsigned char* mac) {
@@ -45,13 +43,13 @@ void lookup_element_to_cache(char* ip, unsigned char* mac) {
 }
 
 void show_arp_cache(char *response, size_t response_size) {
-    snprintf(response, response_size, "ARP Table:\n");
     struct arp_entry *entry, *tmp;
+    char entry_str[150];
+    char time_str[30];    
+    
+    snprintf(response, response_size, "ARP Table:\n");
 
     HASH_ITER(hh, arp_cache_head, entry, tmp) {
-        char entry_str[150];
-        char time_str[30];
-
         struct tm *tm_info = localtime(&entry->timestamp);
         strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", tm_info);
 
@@ -90,3 +88,21 @@ unsigned char* get_element_from_cache(char* ip) {
     return NULL;
 }
 
+void remove_element_expired(int arp_cache_size, struct arp_entry arp_cache[]) {
+    for (int i = 0; i < arp_cache_size; i++) {
+        if (is_element_expired(arp_cache[i].timestamp)) {
+            for (int j = i; j < arp_cache_size - 1; j++) {
+                arp_cache[j] = arp_cache[j + 1];
+            }
+            (arp_cache_size)--;
+            i--;
+        }
+    }
+}
+
+int is_element_expired(time_t timestamp) {
+    time_t current_time = time(NULL);
+    
+    if ((current_time - timestamp) > 1) return 1;
+    return 0; 
+}
