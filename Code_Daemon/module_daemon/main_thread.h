@@ -14,9 +14,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include "pending_queue.h"
 
 #define SOCKET_PATH "/tmp/arp_socket"
 
+void initQueue(Queue *q);
 void print_usage(const char *prog_name);
 void parse_arguments(int argc, char *argv[], const char **iface, int *cache_timeout);
 void disable_kernel_arp(const char *iface);

@@ -98,23 +98,23 @@ void receive_arp_reply(const char *iface) {
     close(sockfd);
 }
 
-int main() {
-    char iface[] = "wlp44s0";
-    uint8_t src_ip[4];
-    uint8_t src_mac[6];
-    char target_ip[] = "192.168.1.16";
-    if (get_ip_address(iface, src_ip) != 0) {
-        perror("get_ip_address failed");
-        return -1;
-    }
+// int main() {
+//     char iface[] = "wlp44s0";
+//     uint8_t src_ip[4];
+//     uint8_t src_mac[6];
+//     char target_ip[] = "192.168.1.16";
+//     if (get_ip_address(iface, src_ip) != 0) {
+//         perror("get_ip_address failed");
+//         return -1;
+//     }
 
-    if (get_mac_address(iface, src_mac) != 0) {
-        perror("get_mac_address failed");
-        return -1;
-    }
+//     if (get_mac_address(iface, src_mac) != 0) {
+//         perror("get_mac_address failed");
+//         return -1;
+//     }
 
-    send_arp_request(iface, src_mac, src_ip, target_ip);
-    receive_arp_reply(iface);
+//     send_arp_request(iface, src_mac, src_ip, target_ip);
+//     receive_arp_reply(iface);
 
-    return 0;
-}
+//     return 0;
+// }

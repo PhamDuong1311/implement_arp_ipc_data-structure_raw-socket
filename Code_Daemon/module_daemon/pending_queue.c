@@ -4,12 +4,6 @@
 #include <time.h>
 #include "pending_queue.h"
 
-void initQueue(Queue *q) {
-    q->front = 0;
-    q->rear = -1;
-    q->size = 0;
-}
-
 int isQueueEmpty(Queue *q) {
     return (q->size == 0);
 }

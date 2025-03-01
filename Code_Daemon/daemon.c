@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <time.h>
@@ -13,12 +14,27 @@
 #include "module_daemon/main_thread.h"
 #include "module_daemon/pending_queue.h"
 
+char buffer[256];
+int exist_mac;
+
 pthread_mutex_t cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void *thread_cli_handler(void *arg) {
     int server_sock = *(int *)arg;
+    Queue q = *(Queue *) arg;
+    int client_sock;
+    unsigned char mac_default[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  
+
     while (1) {
-        receive_request(server_sock);
+        client_sock = receive_request(server_sock);
+        if (client_sock != -1) {  
+            process_request(client_sock, buffer);
+        }
+
+        if (exist_mac == 0) {
+            enqueue(&q, ip, mac_default, 0, false);
+
+        }
     }
     
     unlink(SOCKET_PATH);
@@ -51,6 +67,7 @@ int main(int argc, char *argv[]) {
     uint8_t ip_src[4];
     uint8_t mac_src[6];
     int server_sock;
+    Queue q;
     
     // Địng nghĩa các hàm dưới ở main_thread.c
     parse_arguments(argc, argv, &iface, &cache_timeout);
@@ -69,6 +86,7 @@ int main(int argc, char *argv[]) {
     disable_kernel_arp(iface);
     //create_daemon();
     server_sock = setup_socket();
+    initQueue(&q);
     // Hết định nghĩa các hàm ở main_thread.c
 
     // Tạo các Thread

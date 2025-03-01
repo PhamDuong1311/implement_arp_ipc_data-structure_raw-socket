@@ -16,7 +16,6 @@ typedef struct {
     int front, rear, size;       
 } Queue;
 
-void initQueue(Queue *q);
 int isQueueEmpty(Queue *q);
 int isQueueFull(Queue *q);
 void enqueue(Queue *q, const char *ip, const unsigned char *mac, int count2, int status);

@@ -160,3 +160,9 @@ int setup_socket() {
 
     return server_sock;
 }
+
+void initQueue(Queue *q) {
+    q->front = 0;
+    q->rear = -1;
+    q->size = 0;
+}
