@@ -76,29 +76,29 @@ void displayQueue(Queue *q) {
     }
 }
 
-int main() {
-    Queue q;
-    initQueue(&q);
+// int main() {
+//     Queue q;
+//     initQueue(&q);
 
-    unsigned char mac1[6] = {0x00, 0x1A, 0x2B, 0x3C, 0x4D, 0x5E};
-    unsigned char mac2[6] = {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA};
+//     unsigned char mac1[6] = {0x00, 0x1A, 0x2B, 0x3C, 0x4D, 0x5E};
+//     unsigned char mac2[6] = {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA};
 
-    enqueue(&q, "192.168.1.1", mac1, 5, 1);
-    enqueue(&q, "192.168.1.2", mac2, 3, 0);
+//     enqueue(&q, "192.168.1.1", mac1, 5, 1);
+//     enqueue(&q, "192.168.1.2", mac2, 3, 0);
 
-    printf("\nQueue sau khi thêm phần tử:\n");
-    displayQueue(&q);
+//     printf("\nQueue sau khi thêm phần tử:\n");
+//     displayQueue(&q);
 
-    QueueItem *found = findInQueue(&q, "192.168.1.1");
-    if (found) {
-        printf("\nTìm thấy IP: %s, Count2: %d, Status: %d\n", found->ip, found->count2, found->status);
-    } else {
-        printf("\nKhông tìm thấy IP\n");
-    }
+//     QueueItem *found = findInQueue(&q, "192.168.1.1");
+//     if (found) {
+//         printf("\nTìm thấy IP: %s, Count2: %d, Status: %d\n", found->ip, found->count2, found->status);
+//     } else {
+//         printf("\nKhông tìm thấy IP\n");
+//     }
 
-    printf("\nQueue sau khi dequeue:\n");
-    dequeue(&q);
-    displayQueue(&q);
+//     printf("\nQueue sau khi dequeue:\n");
+//     dequeue(&q);
+//     displayQueue(&q);
 
-    return 0;
-}
+//     return 0;
+// }
