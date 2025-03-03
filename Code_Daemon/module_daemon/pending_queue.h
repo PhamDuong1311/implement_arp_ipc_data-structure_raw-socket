@@ -16,12 +16,14 @@ typedef struct {
     int front, rear, size;       
 } Queue;
 
+extern Queue q;
+
 int isQueueEmpty(Queue *q);
 int isQueueFull(Queue *q);
 void enqueue(Queue *q, const char *ip, const unsigned char *mac, int count2, int status);
 void dequeue(Queue *q);
-QueueItem* findInQueue(Queue *q, const char *ip);
+QueueItem* checkQueue(Queue *q);
 void displayQueue(Queue *q);
-
+void listQueue(Queue *q, QueueItem *item);
 
 #endif 

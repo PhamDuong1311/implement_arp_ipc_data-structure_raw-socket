@@ -37,12 +37,12 @@ void dequeue(Queue *q) {
     q->size--;
 }
 
-QueueItem* findInQueue(Queue *q, const char *ip) {
+QueueItem* checkQueue(Queue *q) {
     if (isQueueEmpty(q)) return NULL;
 
     for (int i = 0; i < q->size; i++) {
         int index = (q->front + i) % QUEUE_SIZE;
-        if (strcmp(q->items[index].ip, ip) == 0) {
+        if (strcmp(q->items[index].status, 1) == 0) {
             return &q->items[index];
         }
     }
@@ -68,6 +68,16 @@ void displayQueue(Queue *q) {
                item->mac[3], item->mac[4], item->mac[5],
                item->timestamp, item->count2, item->status);
     }
+}
+
+void listQueue(Queue *q, QueueItem *item) {
+    if (isQueueEmpty(q)) {
+        printf("Queue is empty\n");
+        return;
+    }
+    int index = (q->front) % QUEUE_SIZE;
+    item = &q->items[index];
+
 }
 
 // int main() {
