@@ -1,22 +1,7 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-#define QUEUE_SIZE 10  
-
-typedef struct {
-    char ip[16];      
-    unsigned char mac[6]; 
-    time_t timestamp;        
-    int count2;             
-    int status;              
-} QueueItem;
-
-typedef struct {
-    QueueItem items[QUEUE_SIZE]; 
-    int front, rear, size;       
-} Queue;
-
-extern Queue q;
+#include "general.h"
 
 int isQueueEmpty(Queue *q);
 int isQueueFull(Queue *q);

@@ -10,6 +10,8 @@
 #include "pending_queue.h"
 #include "arp_cache.h"
 
+Queue q = {};
+
 int isQueueEmpty(Queue *q) {
     return (q->size == 0);
 }

@@ -12,8 +12,10 @@
 #include "arp.h"
 #include "main_thread.h"
 
-uint8_t ip_dst[4] = {};
 uint8_t mac_dst[6] = {};
+uint8_t ip_dst[4] = {};
+uint8_t mac_src[6] = {};
+uint8_t ip_src[4] = {};
 int flag = 0;
 
 void send_arp_request(const char *iface, uint8_t *src_mac, uint8_t *src_ip, const char *target_ip) {

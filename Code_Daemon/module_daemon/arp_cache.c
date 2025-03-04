@@ -1,10 +1,7 @@
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
 #include <unistd.h>
-#include "uthash.h"
 #include "arp_cache.h"
 
 int arp_cache_size = 0;
