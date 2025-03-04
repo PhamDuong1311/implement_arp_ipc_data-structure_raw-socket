@@ -3,7 +3,11 @@
 
 #include <stdint.h>
 
-extern uint8_t mac_target[6];
+extern uint8_t mac_dst[6];
+extern uint8_t mac_src[6];
+extern uint8_t ip_dst[4];
+extern uint8_t ip_src[4];
+extern int flag;
 
 struct arp_header {
     uint16_t htype;
@@ -18,5 +22,6 @@ struct arp_header {
 };
 
 void send_arp_request(const char *iface, uint8_t *src_mac, uint8_t *src_ip, const char *target_ip);
-void receive_arp_reply(const char *iface);
+void send_arp_reply(const char *iface, uint8_t *src_mac, uint8_t *src_ip, uint8_t *target_mac, uint8_t *target_ip);
+void receive_arp(const char *iface);
 #endif

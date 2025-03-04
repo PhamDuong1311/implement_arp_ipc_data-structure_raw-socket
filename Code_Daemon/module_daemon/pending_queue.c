@@ -2,7 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+#include <stdint.h>
+#include <arpa/inet.h>  
+#include <netinet/in.h> 
+
 #include "pending_queue.h"
+#include "arp_cache.h"
 
 int isQueueEmpty(Queue *q) {
     return (q->size == 0);
@@ -32,22 +38,33 @@ void dequeue(Queue *q) {
         printf("Queue is empty! Cannot dequeue.\n");
         return;
     }
-
     q->front = (q->front + 1) % QUEUE_SIZE;
     q->size--;
 }
 
-QueueItem* checkQueue(Queue *q) {
-    if (isQueueEmpty(q)) return NULL;
+void checkQueue(Queue *q) {
+    if (isQueueEmpty(q)) return;
 
-    for (int i = 0; i < q->size; i++) {
+    int size = q->size; 
+
+    for (int i = 0; i < size; i++) {
         int index = (q->front + i) % QUEUE_SIZE;
-        if (strcmp(q->items[index].status, 1) == 0) {
-            return &q->items[index];
+
+        if (q->items[index].status == 1) {  
+            lookup_element_to_cache(q->items[index].ip, q->items[index].mac);
+            dequeue(q);
+            sleep(2);
+            return; 
+        } else {
+            q->items[index].count2++;
+            if (q->items[index].count2 >= 5) { 
+                printf("Packet %s exceeded retry limit, removing from queue.\n", q->items[index].ip);
+                dequeue(q);
+            }
         }
     }
-    return NULL;
 }
+
 
 void displayQueue(Queue *q) {
     if (isQueueEmpty(q)) {
@@ -70,14 +87,24 @@ void displayQueue(Queue *q) {
     }
 }
 
-void listQueue(Queue *q, QueueItem *item) {
+QueueItem* listQueue(Queue *q) {
     if (isQueueEmpty(q)) {
         printf("Queue is empty\n");
+        return NULL;
+    }
+    return &q->items[q->front];
+}
+
+void updateQueue(Queue *q, uint8_t *ip, uint8_t *mac) {
+    if (isQueueEmpty(q)) {
         return;
     }
-    int index = (q->front) % QUEUE_SIZE;
-    item = &q->items[index];
 
+    inet_ntop(AF_INET, ip, q->items[q->front].ip, sizeof(q->items[q->front].ip));
+
+    memcpy(q->items[q->front].ip, ip, 16);
+    memcpy(q->items[q->front].mac, mac, 6);
+    q->items[q->front].status = 1;
 }
 
 // int main() {

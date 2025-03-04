@@ -14,17 +14,35 @@
 #include "module_daemon/main_thread.h"
 #include "module_daemon/pending_queue.h"
 
+
+struct thread_args {
+    int server_sock;
+    Queue *queue;
+};
+
+struct thread_arp_args {
+    Queue *q;
+    const char *iface;
+    uint8_t *src_mac;
+    uint8_t *src_ip;
+};
+
+typedef struct {
+    Queue *q;
+    uint8_t ip_src[4];
+    uint8_t mac_src[6];
+} ThreadArgs;
+
 char buffer[256];
 int exist_mac;
+uint8_t ip_dst[4];
+uint8_t mac_dst[6];
 
 pthread_mutex_t cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void *thread_cli_handler(void *arg) {
-    struct thread_args {
-        int server_sock;
-        Queue *queue;
-    } *args = arg;
-    
+    struct thread_args *args = (struct thread_args *)arg;
+
     int server_sock = args->server_sock;
     Queue *q = args->queue;
     int client_sock;
@@ -43,12 +61,12 @@ void *thread_cli_handler(void *arg) {
             enqueue(q, ip, mac_default, 0, 0);
             while (count1 < 5) {
                 sleep(2);
-                unsigned char *cached_mac = get_element_from_cache(ip);
-                if (cached_mac != NULL) {
+                memcpy(mac, get_element_from_cache(ip), 6);
+                if (mac != NULL) {
                     exist_mac = 1;
                     snprintf(mac_str, sizeof(mac_str), "%02X:%02X:%02X:%02X:%02X:%02X",
-                             cached_mac[0], cached_mac[1], cached_mac[2],
-                             cached_mac[3], cached_mac[4], cached_mac[5]);
+                             mac[0], mac[1], mac[2],
+                             mac[3], mac[4], mac[5]);
                     send_response(client_sock, mac_str);
                     break;
                 } else {
@@ -69,15 +87,9 @@ void *thread_cli_handler(void *arg) {
 }
 
 void *thread_send_arp(void *arg) {
-    struct thread_arp_args {
-        Queue *q;
-        const char *iface;
-        uint8_t *src_mac;
-        uint8_t *src_ip;
-    } *args = arg;
+    struct thread_arp_args *args = (struct thread_arp_args *)arg;
 
     int count3 = 0;
-    
     Queue *q = args->q;
     const char *iface = args->iface;
     uint8_t *src_mac = args->src_mac;
@@ -85,51 +97,45 @@ void *thread_send_arp(void *arg) {
     
     while (1) {
         pthread_mutex_lock(&cache_mutex);
-        QueueItem item;
-        listQueue(q, &item);
+        QueueItem *item;
+        item = listQueue(q);
         pthread_mutex_unlock(&cache_mutex);
                 
         while (count3 <= 5) {
-            send_arp_request(iface, src_mac, src_ip, item.ip);
+            send_arp_request(iface, src_mac, src_ip, item->ip);
             count3++;
             sleep(1);
         }
-
-        while (1) {
-            sleep(2);
-            pthread_mutex_lock(&cache_mutex);
-            int size = q->size;
-            for (int i = 0; i < size; i++) {
-                int index = (q->front + i) % QUEUE_SIZE;
-                QueueItem *item = &q->items[index];
-                
-                if (item->count2 > 5) {
-                    dequeue(q);
-                } else {
-                    item->count2++;
-                    if (item->status) {
-                        add_to_arp_cache(item->ip, item->mac);
-                        dequeue(q);
-                    }
-                }
-            }
-            pthread_mutex_unlock(&cache_mutex);
-        }
+        checkQueue(q);
         
     }
     return NULL;
 }
 
 void *thread_receive_arp(void *arg) {
+    const char *iface = (const char *) arg;
+    ThreadArgs *args = (ThreadArgs *)arg; 
+    Queue *q = args->q;
+    uint8_t *ip_src = args->ip_src;
+    uint8_t *mac_src = args->mac_src;
+
     while (1) {
+        receive_arp(iface);
+        if (flag == 2) {
+            updateQueue(q, ip_dst, mac_dst);
+        }
+
+        if (flag == 1) {
+            send_arp_reply(iface, mac_src, ip_src, mac_dst, ip_dst);
+        }
+
     }
     return NULL;
 }
  
 void *thread_manage_cache(void *arg) {
-    int cache_timeout = *(int *)arg;
     while (1) {
-
+        remove_element_expired();
     }
     return NULL;
 }

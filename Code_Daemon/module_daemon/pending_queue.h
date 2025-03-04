@@ -22,8 +22,9 @@ int isQueueEmpty(Queue *q);
 int isQueueFull(Queue *q);
 void enqueue(Queue *q, const char *ip, const unsigned char *mac, int count2, int status);
 void dequeue(Queue *q);
-QueueItem* checkQueue(Queue *q);
+QueueItem* listQueue(Queue *q);
 void displayQueue(Queue *q);
-void listQueue(Queue *q, QueueItem *item);
+void checkQueue(Queue *q);
+void updateQueue(Queue *q, uint8_t *ip, uint8_t *mac);
 
 #endif 
