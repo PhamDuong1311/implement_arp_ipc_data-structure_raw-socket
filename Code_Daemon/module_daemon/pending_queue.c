@@ -10,8 +10,6 @@
 #include "pending_queue.h"
 #include "arp_cache.h"
 
-Queue q = {};
-
 int isQueueEmpty(Queue *q) {
     return (q->size == 0);
 }
@@ -25,7 +23,10 @@ void enqueue(Queue *q, const char *ip, const unsigned char *mac, int count2, int
         printf("Queue is full! Cannot enqueue.\n");
         return;
     }
-
+    if (!ip || strlen(ip) == 0) {  
+        printf("Error: IP address is empty! Cannot enqueue.\n");
+        return;
+    }
     q->rear = (q->rear + 1) % QUEUE_SIZE;
     strcpy(q->items[q->rear].ip, ip);
     memcpy(q->items[q->rear].mac, mac, 6);
@@ -42,29 +43,6 @@ void dequeue(Queue *q) {
     }
     q->front = (q->front + 1) % QUEUE_SIZE;
     q->size--;
-}
-
-void checkQueue(Queue *q) {
-    if (isQueueEmpty(q)) return;
-
-    int size = q->size; 
-
-    for (int i = 0; i < size; i++) {
-        int index = (q->front + i) % QUEUE_SIZE;
-
-        if (q->items[index].status == 1) {  
-            lookup_element_to_cache(q->items[index].ip, q->items[index].mac);
-            dequeue(q);
-            sleep(2);
-            return; 
-        } else {
-            q->items[index].count2++;
-            if (q->items[index].count2 >= 5) { 
-                printf("Packet %s exceeded retry limit, removing from queue.\n", q->items[index].ip);
-                dequeue(q);
-            }
-        }
-    }
 }
 
 
@@ -97,14 +75,33 @@ QueueItem* listQueue(Queue *q) {
     return &q->items[q->front];
 }
 
+void checkQueue(Queue *q) {
+    if (isQueueEmpty(q)) return;
+
+    int size = q->size; 
+    for (int i = 0; i < size; i++) {
+        int index = (q->front + i) % QUEUE_SIZE;
+        if (q->items[index].status == 1) {  
+            lookup_element_to_cache(q->items[index].ip, q->items[index].mac);
+            dequeue(q);
+            return; 
+        } else {
+            q->items[index].count2++;
+            if (q->items[index].count2 >= 5) { 
+                printf("Packet %s exceeded retry limit, removing from queue.\n", q->items[index].ip);
+                dequeue(q);
+                sleep(2);
+            }
+        }
+    }
+}
+
 void updateQueue(Queue *q, uint8_t *ip, uint8_t *mac) {
     if (isQueueEmpty(q)) {
         return;
     }
 
     inet_ntop(AF_INET, ip, q->items[q->front].ip, sizeof(q->items[q->front].ip));
-
-    memcpy(q->items[q->front].ip, ip, 16);
     memcpy(q->items[q->front].mac, mac, 6);
     q->items[q->front].status = 1;
 }

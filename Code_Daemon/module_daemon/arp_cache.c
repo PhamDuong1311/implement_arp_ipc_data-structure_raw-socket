@@ -4,10 +4,6 @@
 #include <unistd.h>
 #include "arp_cache.h"
 
-int arp_cache_size = 0;
-struct arp_entry *arp_cache_head = NULL;
-struct arp_entry arp_cache[MAX_ARP_CACHE_SIZE];
-
 void lookup_element_to_cache(char* ip, unsigned char* mac) {
     struct arp_entry *entry;
 
@@ -34,7 +30,7 @@ void lookup_element_to_cache(char* ip, unsigned char* mac) {
     HASH_ADD_STR(arp_cache_head, ip_addr, entry);  
     arp_cache_size++;
 
-    printf("Added MAC for %s: %02X:%02X:%02X:%02X:%02X:%02X\n",
+    printf("Added MAC for %s is %02X:%02X:%02X:%02X:%02X:%02X\n",
            entry->ip_addr,
            entry->mac_addr[0], entry->mac_addr[1], entry->mac_addr[2],
            entry->mac_addr[3], entry->mac_addr[4], entry->mac_addr[5]);
@@ -86,26 +82,19 @@ unsigned char* get_element_from_cache(char* ip) {
     return NULL;
 }
 
-void remove_element_expired() {
+void remove_element_expired(int cache_timeout) {
     struct arp_entry *entry, *tmp;
     time_t current_time = time(NULL);
 
     HASH_ITER(hh, arp_cache_head, entry, tmp) {
-        if ((current_time - entry->timestamp) > 2) { 
+        if ((current_time - entry->timestamp) > cache_timeout) { 
             HASH_DEL(arp_cache_head, entry); 
             arp_cache_size--;  
-            printf("Đã xóa ARP entry hết hạn: %s\n", entry->ip_addr);
+            printf("Deleted expired ARP entry: %s\n", entry->ip_addr);
         }
     }
 }
 
-
-int is_element_expired(time_t timestamp) {
-    time_t current_time = time(NULL);
-    
-    if ((current_time - timestamp) > 100) return 1;
-    return 0; 
-}
 
 // int main() {
 //     unsigned char mac1[6] = {0x11, 0x11, 0x11, 0x11, 0x11, 0x11};

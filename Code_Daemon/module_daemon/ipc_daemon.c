@@ -9,10 +9,6 @@
 #include <sys/types.h>
 #include "ipc_daemon.h"
 
-char buffer[256] = "";
-int exist_mac = 1; 
-char ip[16] = "";
-
 int receive_request(int server_sock) {
     struct sockaddr_un client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
@@ -74,15 +70,17 @@ void process_request(int client_sock, const char *buffer) {
         }
     } else if (strncmp(buffer, "FIND", 4) == 0) {
         if (sscanf(buffer, "FIND %15s", ip) == 1) {
-            memcpy(mac, get_element_from_cache(ip), 6);
-            if (mac != NULL) {
-                exist_mac = 1;
-                snprintf(mac_str, sizeof(mac_str), "%02X:%02X:%02X:%02X:%02X:%02X",
-                         mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-                send_response(client_sock, mac_str);
-            } else {
-                exist_mac = 0;
-            }
+            uint8_t *mac_found = get_element_from_cache(ip);
+            if (mac_found != NULL) {
+		    memcpy(mac, mac_found, 6);
+	            exist_mac = 1;
+		    snprintf(mac_str, sizeof(mac_str), "%02X:%02X:%02X:%02X:%02X:%02X",
+		             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+		    send_response(client_sock, mac_str);
+
+	    } else {
+		exist_mac = 0;
+	    }
         } else {
             send_response(client_sock, "Invalid FIND command format");
         }
