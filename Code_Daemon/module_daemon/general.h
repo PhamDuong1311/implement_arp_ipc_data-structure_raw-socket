@@ -38,13 +38,13 @@ typedef struct {
     time_t timestamp;        
     int count2;             
     int status;              
-} QueueItem;
+} queue_item_t;
 
 // Định nghĩa cấu trúc Pending queue
 typedef struct {
-    QueueItem items[QUEUE_SIZE]; 
+    queue_item_t items[QUEUE_SIZE]; 
     int front, rear, size;       
-} Queue;
+} queue_t;
 
 extern int arp_cache_size;
 extern struct arp_entry *arp_cache_head;
@@ -57,9 +57,9 @@ extern uint8_t ip_src[4];
 extern int flag;
 
 extern char buffer[256];
-extern char ip[16];
+extern char ip_str[16];
 extern int exist_mac;
 
-extern Queue q;
+extern queue_t q;
 
 #endif

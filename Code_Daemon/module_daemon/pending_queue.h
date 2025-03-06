@@ -3,13 +3,13 @@
 
 #include "general.h"
 
-int isQueueEmpty(Queue *q);
-int isQueueFull(Queue *q);
-void enqueue(Queue *q, const char *ip, const unsigned char *mac, int count2, int status);
-void dequeue(Queue *q);
-QueueItem* listQueue(Queue *q);
-void displayQueue(Queue *q);
-void checkQueue(Queue *q);
-void updateQueue(Queue *q, uint8_t *ip, uint8_t *mac);
+int is_queue_empty(queue_t *q);
+int is_queue_full(queue_t *q);
+void enqueue(queue_t *q, const char *ip, const unsigned char *mac, int count2, int status);
+void dequeue(queue_t *q);
+queue_item_t* list_queue(queue_t *q);
+void display_queue(queue_t *q);
+void check_queue(queue_t *q);
+void update_queue(queue_t *q, uint8_t *ip, uint8_t *mac);
 
 #endif 

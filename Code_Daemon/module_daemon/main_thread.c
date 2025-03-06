@@ -27,16 +27,18 @@ void parse_arguments(int argc, char *argv[], const char **iface, int *cache_time
         switch (opt) {
             case 'i':
                 *iface = optarg;
+                printf("Config active on card name: %s\n", *iface);
                 break;
             case 't':
                 *cache_timeout = atoi(optarg);
+                printf("Config ARP cache entries timeout: %ds\n", *cache_timeout);
                 break;
             case 'h':
                 print_usage(argv[0]);
                 exit(EXIT_SUCCESS);
             default:
                 print_usage(argv[0]);
-                exit(EXIT_FAILURE);
+                exit(EXIT_SUCCESS);
         }
     }
 
@@ -161,7 +163,7 @@ int setup_socket() {
     return server_sock;
 }
 
-void initQueue(Queue *q) {
+void init_queue(queue_t *q) {
     q->front = 0;
     q->rear = -1;
     q->size = 0;

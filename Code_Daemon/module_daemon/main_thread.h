@@ -4,7 +4,7 @@
 #include "pending_queue.h"
 #include "general.h"
 
-void initQueue(Queue *q);
+void init_queue(queue_t *q);
 void print_usage(const char *prog_name);
 void parse_arguments(int argc, char *argv[], const char **iface, int *cache_timeout);
 void disable_kernel_arp(const char *iface);

@@ -19,17 +19,17 @@ int arp_cache_size = 0;
 struct arp_entry *arp_cache_head = NULL;
 struct arp_entry arp_cache[MAX_ARP_CACHE_SIZE];
 
-uint8_t mac_dst[6] = {};
-uint8_t ip_dst[4] = {};
-uint8_t mac_src[6] = {};
-uint8_t ip_src[4] = {};
+uint8_t mac_dst[6] = {0};
+uint8_t ip_dst[4] = {0};
+uint8_t mac_src[6] = {0};
+uint8_t ip_src[4] = {0};
 int flag = 0;
 
 char buffer[256] = {0};
 int exist_mac = 1; 
-char ip[16] = {0};
+char ip_str[16] = {0};
 
-Queue q = {};
+queue_t q = {};
 
 pthread_mutex_t cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -49,11 +49,11 @@ void *thread_cli_handler(void *arg) {
         }
         if (exist_mac == 0) {
             pthread_mutex_lock(&cache_mutex);
-            enqueue(&q, ip, mac_default, 0, 0);
+            enqueue(&q, ip_str, mac_default, 0, 0);
             pthread_mutex_unlock(&cache_mutex);
             while (count1 < 5) {
                 sleep(2);
-                uint8_t *mac_found = get_element_from_cache(ip);
+                uint8_t *mac_found = get_element_from_cache(ip_str);
                 if (mac_found != NULL) {
                     exist_mac = 1;
                     memcpy(mac, mac_found, 6);
@@ -80,24 +80,24 @@ void *thread_cli_handler(void *arg) {
 
 void *thread_send_arp(void *arg) {
     char *iface = (char *) arg;
-    //int count3;
+    int count3;
     
     while (1) {
     	printf("-----------------------------\n");
         printf("Thread send ARP\n");
         pthread_mutex_lock(&cache_mutex);
-        QueueItem *item = listQueue(&q);
+        queue_item_t *item = list_queue(&q);
         pthread_mutex_unlock(&cache_mutex);
         if (item) {
-            //count3 = 0;
-            //while (count3 <= 5) {
+            count3 = 0;
+            while (count3 < 3) {
                 send_arp_request(iface, mac_src, ip_src, item->ip);
-                //count3++;
-                //sleep(1);
-            //}
+                count3++;
+                sleep(1);
+            }
         }
         pthread_mutex_lock(&cache_mutex);
-        checkQueue(&q);
+        check_queue(&q);
         pthread_mutex_unlock(&cache_mutex);
 
         sleep(1); 
@@ -114,7 +114,7 @@ void *thread_receive_arp(void *arg) {
         receive_arp(iface);
         pthread_mutex_lock(&cache_mutex);
         if (flag == 2) {
-            updateQueue(&q, ip_dst, mac_dst);
+            update_queue(&q, ip_dst, mac_dst);
         }
         if (flag == 1) {
             send_arp_reply(iface, mac_src, ip_src, mac_dst, ip_dst);
@@ -144,6 +144,7 @@ int main(int argc, char *argv[]) {
     int server_sock;
     
     parse_arguments(argc, argv, &iface, &cache_timeout);
+    sleep(1);
     if (get_mac_address(iface, mac_src) != 0) {
         printf("Failed to get MAC address\n");
     } else {
@@ -159,7 +160,7 @@ int main(int argc, char *argv[]) {
     //disable_kernel_arp(iface);
     server_sock = setup_socket();
     //create_daemon();
-    initQueue(&q);
+    init_queue(&q);
     
     pthread_t cli_thread, send_thread, recv_thread, cache_thread;
     

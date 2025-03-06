@@ -48,10 +48,10 @@ void process_request(int client_sock, const char *buffer) {
     printf("Received command: %s\n", buffer);
 
     if (strncmp(buffer, "ADD", 3) == 0) {
-        if (sscanf(buffer, "ADD %15s %17s", ip, mac_str) == 2) {
+        if (sscanf(buffer, "ADD %15s %17s", ip_str, mac_str) == 2) {
             if (sscanf(mac_str, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
                        &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]) == 6) {
-                lookup_element_to_cache(ip, mac);
+                lookup_element_to_cache(ip_str, mac);
                 send_response(client_sock, "ARP entry added");
             } else {
                 printf("Invalid MAC address format\n");
@@ -62,15 +62,15 @@ void process_request(int client_sock, const char *buffer) {
             send_response(client_sock, "Invalid ADD command format");
         }
     } else if (strncmp(buffer, "DELETE", 6) == 0) {
-        if (sscanf(buffer, "DELETE %15s", ip) == 1) {
-            delete_element_from_cache(ip);
+        if (sscanf(buffer, "DELETE %15s", ip_str) == 1) {
+            delete_element_from_cache(ip_str);
             send_response(client_sock, "ARP entry deleted");
         } else {
             send_response(client_sock, "Invalid DELETE command format");
         }
     } else if (strncmp(buffer, "FIND", 4) == 0) {
-        if (sscanf(buffer, "FIND %15s", ip) == 1) {
-            uint8_t *mac_found = get_element_from_cache(ip);
+        if (sscanf(buffer, "FIND %15s", ip_str) == 1) {
+            uint8_t *mac_found = get_element_from_cache(ip_str);
             if (mac_found != NULL) {
 		    memcpy(mac, mac_found, 6);
 	            exist_mac = 1;
