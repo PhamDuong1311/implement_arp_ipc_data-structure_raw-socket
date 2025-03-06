@@ -131,7 +131,8 @@ void *thread_manage_cache(void *arg) {
     	printf("-----------------------------\n");
         printf("Thread manage cache\n");
         pthread_mutex_lock(&cache_mutex);
-        remove_element_expired(cache_timeout);
+        save_cache_to_file();
+        remove_entry_expired(cache_timeout);
         pthread_mutex_unlock(&cache_mutex);
         sleep(5);
     }
@@ -140,7 +141,7 @@ void *thread_manage_cache(void *arg) {
 
 int main(int argc, char *argv[]) {
     const char *iface = "wlp45s0";
-    int cache_timeout = 15;
+    int cache_timeout = 100;
     int server_sock;
     
     parse_arguments(argc, argv, &iface, &cache_timeout);

@@ -82,7 +82,7 @@ unsigned char* get_element_from_cache(char* ip) {
     return NULL;
 }
 
-void remove_element_expired(int cache_timeout) {
+void remove_entry_expired(int cache_timeout) {
     struct arp_entry *entry, *tmp;
     time_t current_time = time(NULL);
 
@@ -95,6 +95,33 @@ void remove_element_expired(int cache_timeout) {
     }
 }
 
+void save_cache_to_file() {
+    struct arp_entry *entry, *tmp;
+    char time_str[30];    
+
+    FILE *file = fopen("arp_cache.txt", "w");
+    if (file == NULL) {
+        printf("failed to open file\n");
+        return;
+    }
+    
+    fprintf(file, "ARP Table:\n");
+
+    HASH_ITER(hh, arp_cache_head, entry, tmp) {
+        struct tm *tm_info = localtime(&entry->timestamp);
+        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", tm_info);
+
+        fprintf(file, "%s -> %02X:%02X:%02X:%02X:%02X:%02X | Last seen: %s\n",
+                 entry->ip_addr,
+                 entry->mac_addr[0], entry->mac_addr[1], entry->mac_addr[2],
+                 entry->mac_addr[3], entry->mac_addr[4], entry->mac_addr[5],
+                 time_str);
+    }
+
+    fclose(file);
+    printf("Write data to file successfully!\n");
+
+}
 
 // int main() {
 //     unsigned char mac1[6] = {0x11, 0x11, 0x11, 0x11, 0x11, 0x11};
@@ -110,7 +137,7 @@ void remove_element_expired(int cache_timeout) {
 //     printf("Chờ 5 giây để mục hết hạn...\n");
 //     sleep(2);
 
-//     remove_element_expired();
+//     remove_entry_expired();
     
 //     show_arp_cache(response, sizeof(response));
 //     printf("%s\n", response);
