@@ -41,8 +41,6 @@ void *thread_cli_handler(void *arg) {
     char mac_str[18];
     
     while (1) {
-    	printf("-----------------------------\n");
-        printf("Thread CLI hander\n");
         client_sock = receive_request(server_sock);
         if (client_sock != -1) {  
             process_request(client_sock, buffer);
@@ -52,7 +50,7 @@ void *thread_cli_handler(void *arg) {
             enqueue(&q, ip_str, mac_default, 0, 0);
             pthread_mutex_unlock(&cache_mutex);
             while (count1 < 5) {
-                sleep(2);
+                sleep(5);
                 uint8_t *mac_found = get_element_from_cache(ip_str);
                 if (mac_found != NULL) {
                     exist_mac = 1;
@@ -79,45 +77,52 @@ void *thread_cli_handler(void *arg) {
 }
 
 void *thread_send_arp(void *arg) {
-    char *iface = (char *) arg;
-    int count3;
-    
+    char *iface = (char *)arg;
+
     while (1) {
-    	printf("-----------------------------\n");
-        printf("Thread send ARP\n");
         pthread_mutex_lock(&cache_mutex);
         queue_item_t *item = list_queue(&q);
         pthread_mutex_unlock(&cache_mutex);
+
         if (item) {
-            count3 = 0;
-            while (count3 < 3) {
+            if (item->status == 1) {  
+                pthread_mutex_lock(&cache_mutex);
+                lookup_element_to_cache(item->ip, item->mac);
+                dequeue(&q);
+                pthread_mutex_unlock(&cache_mutex);
+            } else if (item->count2 < 5) {
                 send_arp_request(iface, mac_src, ip_src, item->ip);
-                count3++;
-                sleep(1);
+
+                pthread_mutex_lock(&cache_mutex);
+                item->count2++;
+                pthread_mutex_unlock(&cache_mutex);
+            } else {
+                printf("Max retries reached for %s, removing from queue.\n", item->ip);
+                pthread_mutex_lock(&cache_mutex);
+                dequeue(&q);
+                pthread_mutex_unlock(&cache_mutex);
             }
         }
-        pthread_mutex_lock(&cache_mutex);
-        check_queue(&q);
-        pthread_mutex_unlock(&cache_mutex);
 
-        sleep(1); 
+        sleep(2);
     }
     return NULL;
 }
+
 
 void *thread_receive_arp(void *arg) {
     char *iface = (char *) arg;
 
     while (1) {
-    	printf("-----------------------------\n");
-        printf("Thread receive ARP\n");
         receive_arp(iface);
         pthread_mutex_lock(&cache_mutex);
         if (flag == 2) {
             update_queue(&q, ip_dst, mac_dst);
+            flag = 0;
         }
         if (flag == 1) {
             send_arp_reply(iface, mac_src, ip_src, mac_dst, ip_dst);
+            flag = 0;
         }
         pthread_mutex_unlock(&cache_mutex);
         sleep(1);
@@ -128,8 +133,6 @@ void *thread_receive_arp(void *arg) {
 void *thread_manage_cache(void *arg) {
     int cache_timeout = *(int *) arg;
     while (1) {
-    	printf("-----------------------------\n");
-        printf("Thread manage cache\n");
         pthread_mutex_lock(&cache_mutex);
         save_cache_to_file();
         remove_entry_expired(cache_timeout);
@@ -140,7 +143,7 @@ void *thread_manage_cache(void *arg) {
 }
 
 int main(int argc, char *argv[]) {
-    const char *iface = "wlp45s0";
+    const char *iface = "wlp44s0";
     int cache_timeout = 100;
     int server_sock;
     

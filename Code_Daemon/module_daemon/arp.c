@@ -60,7 +60,7 @@ void send_arp_request(const char *iface, uint8_t *src_mac, uint8_t *src_ip, cons
     if (sendto(sockfd, packet, sizeof(packet), 0, (struct sockaddr *)&socket_address, sizeof(socket_address)) < 0) {
         perror("Sendto error");
     } else {
-        printf("ARP Request sent from %s to %s\n", iface, target_ip);
+        printf("[Sent ARP Request] to %s\n", target_ip);
     }
 
     close(sockfd);
@@ -113,8 +113,9 @@ void send_arp_reply(const char *iface, uint8_t *src_mac, uint8_t *src_ip, uint8_
     if (sendto(sockfd, packet, sizeof(packet), 0, (struct sockaddr *)&socket_address, sizeof(socket_address)) < 0) {
         perror("Sendto error");
     } else {
-        printf("ARP Reply sent to %02X:%02X:%02X:%02X:%02X:%02X\n",
-               target_mac[0], target_mac[1], target_mac[2], target_mac[3], target_mac[4], target_mac[5]);
+        printf("[Sent ARP Reply] to %d.%d.%d.%d (%02X:%02X:%02X:%02X:%02X:%02X)\n", 
+        	target_ip[0], target_ip[1], target_ip[2], target_ip[3], target_mac[0], 
+        	target_mac[1], target_mac[2], target_mac[3], target_mac[4], target_mac[5]);
     }
 
     close(sockfd);
@@ -142,14 +143,14 @@ void receive_arp(const char *iface) {
         	if (memcmp(arp->tpa, ip_src, 4) == 0) {
     		    
 		    if (ntohs(arp->oper) == 1) {  
-		        printf("[Received ARP Request] From: %d.%d.%d.%d (%02X:%02X:%02X:%02X:%02X:%02X)\n",
+		        printf("[Received ARP Request] from: %d.%d.%d.%d (%02X:%02X:%02X:%02X:%02X:%02X)\n",
 		               arp->spa[0], arp->spa[1], arp->spa[2], arp->spa[3],
 		               arp->sha[0], arp->sha[1], arp->sha[2], arp->sha[3], arp->sha[4], arp->sha[5]);
 		        flag = 1;
 		        memcpy(ip_dst, arp->spa, 4);
 		        memcpy(mac_dst, arp->sha, 6);
 		    } else if (ntohs(arp->oper) == 2) {  
-		        printf("[Received ARP Reply] From: %d.%d.%d.%d (%02X:%02X:%02X:%02X:%02X:%02X)\n",
+		        printf("[Received ARP Reply] from: %d.%d.%d.%d (%02X:%02X:%02X:%02X:%02X:%02X)\n",
 		               arp->spa[0], arp->spa[1], arp->spa[2], arp->spa[3],
 		               arp->sha[0], arp->sha[1], arp->sha[2], arp->sha[3], arp->sha[4], arp->sha[5]);
 		        

@@ -46,54 +46,12 @@ void dequeue(queue_t *q) {
 }
 
 
-void display_queue(queue_t *q) {
-    if (is_queue_empty(q)) {
-        printf("Queue is empty\n");
-        return;
-    }
-
-    printf("IP\t\tMAC\t\t\tTimestamp\tCount2\tStatus\n");
-    printf("-------------------------------------------------------------\n");
-
-    for (int i = 0; i < q->size; i++) {
-        int index = (q->front + i) % QUEUE_SIZE;
-        queue_item_t *item = &q->items[index];
-
-        printf("%s\t%02X:%02X:%02X:%02X:%02X:%02X\t%ld\t%d\t%d\n",
-               item->ip,
-               item->mac[0], item->mac[1], item->mac[2],
-               item->mac[3], item->mac[4], item->mac[5],
-               item->timestamp, item->count2, item->status);
-    }
-}
 
 queue_item_t* list_queue(queue_t *q) {
     if (is_queue_empty(q)) {
-        printf("Queue is empty\n");
         return NULL;
     }
     return &q->items[q->front];
-}
-
-void check_queue(queue_t *q) {
-    if (is_queue_empty(q)) return;
-
-    int size = q->size; 
-    for (int i = 0; i < size; i++) {
-        int index = (q->front + i) % QUEUE_SIZE;
-        if (q->items[index].status == 1) {  
-            lookup_element_to_cache(q->items[index].ip, q->items[index].mac);
-            dequeue(q);
-            return; 
-        } else {
-            q->items[index].count2++;
-            if (q->items[index].count2 >= 5) { 
-                printf("Packet %s exceeded retry limit, removing from queue.\n", q->items[index].ip);
-                dequeue(q);
-                sleep(2);
-            }
-        }
-    }
 }
 
 void update_queue(queue_t *q, uint8_t *ip, uint8_t *mac) {

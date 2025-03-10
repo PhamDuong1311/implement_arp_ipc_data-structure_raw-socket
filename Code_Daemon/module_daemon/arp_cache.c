@@ -119,7 +119,6 @@ void save_cache_to_file() {
     }
 
     fclose(file);
-    printf("Write data to file successfully!\n");
 
 }
 
