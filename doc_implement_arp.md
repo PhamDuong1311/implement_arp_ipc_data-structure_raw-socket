@@ -13,8 +13,7 @@ Table of Contents
   * 1.4 [References](#14-references)
 * 2 [Design](#2-overall-description)
     * 2.1 [Context](#21-context)
-    * 2.2 [Logical](#22-logical)
-    * 2.3 [Implementation](#23-implementation)
+    * 2.2 [Implementation](#22-implementation)
     * 2.4 [System Model](#24-system-model)
     * 2.5 [Communication Diagram](#25-communication-diagram)
     * 2.6 [Algorithm flowchart](#26-algorithm-flowchart)
@@ -22,17 +21,17 @@ Table of Contents
     * 2.8 [Running the code](#28-running-the-code)
 
 ## 1. Introduction
-Document này là cung cấp mô tả thiết kế phần mềm cho việc implement giao thức **ARP** trong **userspace** bằng **raw socket**. Document sẽ mô tả các yêu cầu, thiết kế, và các chi tiết implement phần mềm **ARP** => giúp hiểu rõ về cách hệ thống hoạt động và tương tác với mạng.
+Document này là cung cấp mô tả thiết kế phần mềm cho việc implement bộ giao thức **ARP** tương tự trên **Linux OS**. Document sẽ mô tả các yêu cầu, thiết kế, và các chi tiết implement phần mềm **ARP** => giúp hiểu rõ về cách hệ thống hoạt động và tương tác với mạng.
 ### 1.1 Document Overview
 Tài liệu này được chia thành các phần sau:
 - Phần 1: Mục đích tài liệu và mô tả hệ thống.
 - Phần 2: Thiết kế phần mềm chi tiết.
 ### 1.2 Document Purpose
-Project này sẽ triển khai giao thức **ARP** trong **userspace**, sử dụng **raw socket** để nhận và gửi các gói **ARP Request** và **ARP Reply**. Các chức năng chính bao gồm:
-- Có thể hoạt động trên nhiều **terminal** cùng thiết bị hoặc khác thiết bị (Nhiều **CLIs** giao tiếp với một **Daemon**).
+Project này sẽ triển khai giao thức **ARP** trong **userspace**, sử dụng **raw socket** để nhận và gửi các gói **ARP Request** và **ARP Reply**. Các feature chính bao gồm:
+- Truy vấn trong **ARP cache** tự định nghĩa (add, delete, show, find...).
 - Gửi và nhận các gói **ARP Request**, **ARP Reply** và quản lý **ARP cache** với **timeout**.
 - Hoạt động trực tiếp trên tầng **userspace** mà không thông qua **kernel network stack**.
-### 1.3 Keywords
+### 1.3 Keywordsfeature
 - **ARP**: Address Resolution Protocol, giao thức mapping địa chỉ IP -> địa chỉ MAC thuộc L2 trong cùng 1 network.
 - **Raw Socket**: Loại socket nhận data từ L2 trong kernel network stack và bypass lên thẳng userspace.
 - **Daemon**: Process chạy ngầm không phụ thuộc vào terminal, sẽ kết thúc khi tắt nguồn.
@@ -41,6 +40,7 @@ Project này sẽ triển khai giao thức **ARP** trong **userspace**, sử d�
 - **ioctl**: Hàm tương tác với hardware, trong bối cảnh sử dụng  thì hàm này sẽ dùng để get địa chỉ IP từ 1 NIC cụ thể.
 - **IPC**: cơ chế giao tiếp giữa các process với nhau, trong bối cảnh này thì giao tiếp giữa daemon process và CLI process.
 - **NIC**: nơi truyền và nhận trực tiếp các gói tin mạng raw chưa qua xử lý, trong bối cảnh này sẽ sử dụng 2 card wifi để tương tác với nhau (trên cùng 1 host).
+- etc...
 ### 1.4 References
 - RFC 826 - "Ethernet Address Resolution Protocol"
 - "Unix Network Programming" - Example of Raw Sockets
@@ -48,29 +48,22 @@ Project này sẽ triển khai giao thức **ARP** trong **userspace**, sử d�
 - etc... 
 ## 2. Design
 ### 2.1 Context
-Để các thiết bị có thể liên lạc với nhau trong cùng 1 **LAN**, chúng phải dựa **L2 header** để biết được địa chỉ **MAC** của nhau, vậy làm thé nào biết được địa chỉ **MAC** của nhau khi chúng ta đã có trong tay địa chỉ **IP** => dựa vào **ARP protocol**. **ARP** là một giao thức mạng giúp ánh xạ địa chỉ **IP** sang địa chỉ **MAC** (Media Access Control) trong mạng cục bộ (**LAN**). Ở trong phần mềm này, em sẽ sử dụng 2 loại process: **Daemon process** và **CLI process**. Người dùng nhập vào địa chỉ **IP** cần truy vấn tại chương trình chạy ở **CLI process**, **CLI** sẽ gửi thông báo tới **Daemon** yêu cầu truy vấn ra địa chỉ **MAC** phù hợp. Nếu giả sử tại **Daemon** đã lưu trữ sẵn **MAC** tương ứng với **IP** thì ngay lập tức nó sẽ gửi lại **MAC** cho **CLI** và hiển thị kết quả. Còn nếu không tìm thấy **MAC** phù hợp, **Daemon** sẽ gửi 1 **ARP request** ra ngoài để yêu cầu nhận được **MAC** của thiết bị tương thích và **ARP reply** lại **MAC** đó, cuối cùng là gửi lại kết quả cho **CLI**. Ngoài ra phần mềm còn có những tính năng thao tác và hiển thị **ARP cache table**.
-### 2.2 Logical
-- **Daemon**: Daemon sẽ lắng nghe thông báo (địa chỉ IP, yêu cầu thao tác với ARP cache) từ các CLI, gửi lại kết quả tương ứng sau khi lấy được thông tin của inteface cụ thể, lưu trữ kết quả vào ARP cache, và thực hiện việc timeout cho ARP cache table.
-- **CLI**: CLI cho phép người dùng gửi thông báo tới daemon để nhận lại kết quả.
-- **ARP Cache**: Lưu trữ các ánh xạ IP-MAC trong một thời gian nhất định (15 giây) để tái sử dụng.
-- **Giao tiếp giữa daemon và CLI**: CLIs gửi thông báo đến daemon thông qua cơ chế IPC (Inter-process communication) và daemon sẽ phản hồi lại kết quả cho từng CLI.
-### 2.3 Implementation
+Hệ thống bao gồm một daemon chạy nền chịu trách nhiệm quản lý ARP cache và xử lý các yêu cầu gửi ARP Request. CLI được thiết kế để tương tác với daemon thông qua giao tiếp liên trình (IPC), cho phép thực hiện các thao tác trên ARP cache như thêm, xóa, hiển thị và tìm kiếm các mục trong cache. Daemon chạy nền duy trì bảng ARP cache, nhận và xử lý các lệnh từ CLI qua socket hoặc một cơ chế IPC khác, thực hiện ARP Request ra bên ngoài khi cần tìm địa chỉ MAC của một IP chưa có trong cache và cập nhật cache với các phản hồi ARP nhận được. CLI cung cấp các lệnh như add <IP> <MAC> để thêm một cặp IP-MAC vào ARP cache, delete <IP> để xóa một mục khỏi cache, show để hiển thị toàn bộ ARP cache và find <IP> để kiểm tra xem một IP có trong cache hay không. Khi nhận lệnh tìm kiếm một IP chưa có trong cache, daemon sẽ gửi ARP Request lên mạng và cập nhật cache khi nhận được ARP Reply. Giao tiếp giữa CLI và daemon đảm bảo CLI có thể truy vấn ARP cache nhanh chóng và daemon có thể tự động cập nhật địa chỉ MAC khi cần thiết. Để tránh xung đột với xử lý ARP của kernel, hệ thống sẽ vô hiệu hóa ARP trên giao diện mạng bằng cách cấu hình sysctl hoặc thông qua lệnh ip link set dev <interface> arp off, đảm bảo mọi yêu cầu ARP đều do daemon quản lý. Ngoài ra, daemon cũng có thể nhận các ARP Request từ bên ngoài và phản hồi lại với địa chỉ MAC tương ứng của nó, thay thế hoàn toàn vai trò của kernel trong việc xử lý ARP Reply.
+### 2.2 Implementation
 - **Daemon**:
-  + Tạo daemon: Daemon sẽ chạy dưới dạng một process nền. Nó sẽ lắng nghe các yêu cầu từ CLI thông qua IPC.
-  + ARP Request/Reply: Khi nhận được thông báo từ CLI, daemon sẽ sử dụng`ioctl()` để gửi ARP request và nhận ARP reply.
-  + Lưu trữ ARP cache: Daemon sẽ lưu các địa chỉ MAC trong ARP cache và mỗi entry sẽ có timeout là 15 giây.
-  + Giao tiếp với CLI: Daemon và CLIs giao tiếp qua cơ chế IPC.
+  + Chạy nền dưới dạng process.
+  + Cho phép cấu hình user (iface, timeout ARP cache) trước khi chạy.
+  + Lấy địa chỉ IP, MAC của iface được chọn.
+  + Tắt xử lý ARP tại kernel network stack.
+  + Giao tiếp với CLI qua IPC.
+  + Gửi và nhận ARP request/reply.
+  + Lưu trữ ARP cache với timeout 100 giây.
 - **CLIs**:
-  + CLIs sẽ nhận lệnh từ người dùng để thông báo tới daemon.
-  + CLIs sẽ hiển thị kết quả mà daemon trả lại.
-- **Giao tiếp IPC**:
-  + Sử dụng Unix domain socket để có thể giao tiếp Daemon với nhiều CLI thông qua `select()` hoặc `epoll()`.
-- **Cơ chế ioctl**:
-  + Sử dụng `ioctl` để tương tác với giao diện mạng của hệ thống và thực hiện việc gửi ARP request.
-- **Cơ chế nhận packet**:
-  + Packet nhận được tại NIC sẽ đẩy thẳng lên userspace và drop tại kernel thông qua `iptables` (chặn packet ở Netfilter (L3-L4)).
+  + Nhận lệnh từ người dùng để thông báo tới daemon.
+  + Hiển thị kết quả mà daemon trả lại.
 
 ### 2.4 System Model
+chưa sửa
 
 ![image](https://github.com/user-attachments/assets/de17fca0-b4f2-4f57-98fe-48356cee1c4e)
 
@@ -81,14 +74,15 @@ Project này sẽ triển khai giao thức **ARP** trong **userspace**, sử d�
 - **Daemon trả kết quả cho CLI**: Daemon gửi kết quả (MAC) về cho CLI.
 - **Daemon lưu vào ARP Cache**: Daemon lưu thông tin IP-MAC vào ARP cache theo 1 data structure và gán timeout cho entry đó.
 ### 2.5 Communication Diagram
+chưa sửa
 
 ![image](https://github.com/user-attachments/assets/53fa10a7-fa45-43e0-b8b7-344429a942cd)
 
 ### 2.6 Algorithm flowchart
 #### a. Daemon
 
-![ảnh](https://github.com/user-attachments/assets/42a4a3af-e645-40aa-96c9-ef55a042868a)
-
+**![ảnh](https://github.com/user-attachments/assets/42a4a3af-e645-40aa-96c9-ef55a042868a)
+**
 #### b. CLI
 
 ![ảnh](https://github.com/user-attachments/assets/d1c37ecc-81ac-485a-adac-b79dab919368)
