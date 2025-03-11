@@ -111,13 +111,13 @@ Hệ thống bao gồm một **daemon** chạy nền chịu trách nhiệm quả
 
 ### 2.6 Running the code
 - Chạy **Daemon process** ở Terminal 1:
-  - $ cd Code_Daemon
-  - $ make
-  - sudo ./daemon -i <interface> -t <timeout>
+  - `$ cd Code_Daemon`
+  - `$ make`
+  - `sudo ./daemon -i <interface> -t <timeout>`
 - Chạy **CLI process** ở Terminal 2:
-  - $ cd Code_CLI
-  - $ make
-  - $ sudo ./cli
+  - `$ cd Code_CLI`
+  - `$ make`
+  - `$ sudo ./cli`
  
 
 
