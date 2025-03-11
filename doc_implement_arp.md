@@ -68,22 +68,21 @@ Hệ thống bao gồm một **daemon** chạy nền chịu trách nhiệm quả
 
 
 **Mô tả quá trình hoạt động:**
+  - Tắt xử lý **ARP** trong **Kernel**:
+      - Lệnh `ip link set dev <interface> arp off` được sử dụng để tắt chức năng xử lý **ARP** của ** nhân Linux**.
+      - Điều này ngăn **Kernel** tự động phản hồi **ARP reply** hoặc gửi **ARP request**.
 
-    - Tắt xử lý **ARP** trong **Kernel**:
-        - Lệnh `ip link set dev <interface> arp off` được sử dụng để tắt chức năng xử lý **ARP** của ** nhân Linux**.
-        - Điều này ngăn **Kernel** tự động phản hồi **ARP reply** hoặc gửi **ARP request**.
+  - **Daemon** trong **Userspace** thay thế **Kernel** xử lý **ARP**:
+      - **CLI** tương tác với **Daemon** thông qua **IPC**.
+      - **Daemon** thực hiện hai tác vụ chính với **ARP Cache**:
+          - **POST**: Lưu các mục **ARP** mới vào **cache**.
+          - **GET**: Truy vấn từ **ARP cache**.
+      - **Daemon** có thể xuất **ARP cache** ra **file** để lưu trữ.
 
-    - **Daemon** trong **Userspace** thay thế **Kernel** xử lý **ARP**:
-        - **CLI** tương tác với **Daemon** thông qua **IPC**.
-        - **Daemon** thực hiện hai tác vụ chính với **ARP Cache**:
-            - **POST**: Lưu các mục **ARP** mới vào **cache**.
-            - **GET**: Truy vấn từ **ARP cache**.
-        - **Daemon** có thể xuất **ARP cache** ra **file** để lưu trữ.
-
-    - Trao đổi **ARP** giữa **Host A** và **các Host khác**:
-        - Khi một tiến trình trên **Host B** (ví dụ **CLI** thực hiện lệnh **ping**) cần biết địa chỉ **MAC** của **Host A**, nó sẽ gửi **ARP Request**.
-        - **Host A** không để **Kernel** phản hồi mà **Daemon** trong **Userspace** sẽ tiếp nhận **ARP Request**, gửi lại ARP reply địa chỉ MAC của chính nó.
-        - **Daemon** phân tích yêu cầu từ **CLI**, nếu **CLI** yêu cầu tìm 1 **IP** không có trong **ARP cache**, daemon sẽ gửi **ARP Request** tới các **Host** khác để tìm kiếm địa chỉ **MAC** phù hợp.
+  - Trao đổi **ARP** giữa **Host A** và **các Host khác**:
+      - Khi một tiến trình trên **Host B** (ví dụ **CLI** thực hiện lệnh **ping**) cần biết địa chỉ **MAC** của **Host A**, nó sẽ gửi **ARP Request**.
+      - **Host A** không để **Kernel** phản hồi mà **Daemon** trong **Userspace** sẽ tiếp nhận **ARP Request**, gửi lại ARP reply địa chỉ MAC của chính nó.
+      - **Daemon** phân tích yêu cầu từ **CLI**, nếu **CLI** yêu cầu tìm 1 **IP** không có trong **ARP cache**, daemon sẽ gửi **ARP Request** tới các **Host** khác để tìm kiếm địa chỉ **MAC** phù hợp.
 
 ### 2.4 Algorithm flowchart
 #### a. Daemon
