@@ -20,8 +20,8 @@ int receive_request(int server_sock) {
         perror("accept failed");
         return -1;  
     }
-    memset(buffer, 0, sizeof(buffer));
-    bytes_received = recv(client_sock, buffer, sizeof(buffer) - 1, 0);
+    memset(msg_from_cli, 0, sizeof(msg_from_cli));
+    bytes_received = recv(client_sock, msg_from_cli, sizeof(msg_from_cli) - 1, 0);
     if (bytes_received > 0) {
         buffer[bytes_received] = '\0';
         return client_sock;  
@@ -39,27 +39,25 @@ void send_response(int client_sock, const char *message) {
     close(client_sock);
 }
 
-void process_request(int client_sock, const char *buffer) {
+void process_request(int client_sock, msg_t *msg_from_cli) {
     char mac_str[18];
     unsigned char mac[6];
     char response[1024];
 
     printf("\n------------------------------------------------------\n");
-    printf("Received command: %s\n", buffer);
+    printf("Received command: %s %s %s\n", msg_from_cli->cmd, msg_from_cli->ip, msg_from_cli->mac);
 
-    if (strncmp(buffer, "ADD", 3) == 0) {
-        if (sscanf(buffer, "ADD %15s %17s", ip_str, mac_str) == 2) {
-            if (sscanf(mac_str, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
+    if (msg_from_cli->cmd == 'a') {  
+        if (inet_pton(AF_INET, msg_from_cli->ip, &ip_addr) == 1) { 
+            if (sscanf(msg_from_cli->mac, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
                        &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]) == 6) {
-                lookup_element_to_cache(ip_str, mac);
+                lookup_element_to_cache(msg_from_cli->ip, mac);
                 send_response(client_sock, "ARP entry added");
             } else {
-                printf("Invalid MAC address format\n");
                 send_response(client_sock, "Invalid MAC address format");
             }
         } else {
-            printf("Invalid ADD command format\n");
-            send_response(client_sock, "Invalid ADD command format");
+            send_response(client_sock, "Invalid IP address format");
         }
     } else if (strncmp(buffer, "DELETE", 6) == 0) {
         if (sscanf(buffer, "DELETE %15s", ip_str) == 1) {

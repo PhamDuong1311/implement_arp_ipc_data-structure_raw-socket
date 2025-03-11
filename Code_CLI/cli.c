@@ -25,8 +25,8 @@ int setup_socket() {
     return sockfd;
 }
 
-void send_request(int sockfd, const char *message) {
-    if (send(sockfd, message, strlen(message), 0) == -1) {
+void send_request(int sockfd, msg_t *query) {
+    if (send(sockfd, query, sizeof(query), 0) == -1) {
         perror("send failed");
         close(sockfd);
         exit(EXIT_FAILURE);
@@ -57,7 +57,6 @@ void show_help() {
 int main(int argc, char *argv[]) {
 
     int opt;
-    char message[256] = {0};
     
     if (argc < 2) {
         show_help();
@@ -65,12 +64,16 @@ int main(int argc, char *argv[]) {
     }
 
     while ((opt = getopt(argc, argv, "a:d:sf:h")) != -1) {
+        msg_t query = {0};
         int sockfd = setup_socket();  
         switch (opt) {
             case 'a':
                 if (optind < argc) {
-                    snprintf(message, sizeof(message), "ADD %s %s", optarg, argv[optind]);
-                    send_request(sockfd, message);  
+                    query.cmd = 'a';
+                    strncpy(query.ip, optarg, sizeof(query.ip) - 1);
+                    strncpy(query.mac, argv[optind], sizeof(query.mac) - 1);
+
+                    send_request(sockfd, &query);  
                     receive_response(sockfd);
                     optind++;
                 } else {
@@ -79,18 +82,20 @@ int main(int argc, char *argv[]) {
                 }
                 break;
             case 'd':
-                snprintf(message, sizeof(message), "DELETE %s", optarg);
-                send_request(sockfd, message);  
+                query.cmd = 'd';
+                strncpy(query.ip, optarg, sizeof(query.ip) - 1);
+                send_request(sockfd, &query);  
                 receive_response(sockfd);
                 break;
             case 's':
-                strcpy(message, "SHOW");
-                send_request(sockfd, message);  
+                query.cmd = 's';
+                send_request(sockfd, &query);  
                 receive_response(sockfd);
                 break;
             case 'f':
-                snprintf(message, sizeof(message), "FIND %s", optarg);
-                send_request(sockfd, message);  
+                query.cmd = 'f';
+                strncpy(query.ip, optarg, sizeof(query.ip) - 1);
+                send_request(sockfd, &query);  
                 receive_response(sockfd);
                 break;
             case 'h':

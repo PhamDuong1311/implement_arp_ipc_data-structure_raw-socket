@@ -23,13 +23,12 @@ uint8_t mac_dst[6] = {0};
 uint8_t ip_dst[4] = {0};
 uint8_t mac_src[6] = {0};
 uint8_t ip_src[4] = {0};
-int flag = 0;
 
-char buffer[256] = {0};
 int exist_mac = 1; 
 char ip_str[16] = {0};
 
-queue_t q = {};
+msg_t msg_from_cli = {0};
+queue_t pending_queue = {0};
 
 pthread_mutex_t cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -47,7 +46,7 @@ void *thread_cli_handler(void *arg) {
         }
         if (exist_mac == 0) {
             pthread_mutex_lock(&cache_mutex);
-            enqueue(&q, ip_str, mac_default, 0, 0);
+            enqueue(&pending_queue, ip_str, mac_default, 0, 0);
             pthread_mutex_unlock(&cache_mutex);
             while (count1 < 5) {
                 sleep(5);
@@ -81,14 +80,14 @@ void *thread_send_arp(void *arg) {
 
     while (1) {
         pthread_mutex_lock(&cache_mutex);
-        queue_item_t *item = list_queue(&q);
+        queue_item_t *item = list_queue(&pending_queue);
         pthread_mutex_unlock(&cache_mutex);
 
         if (item) {
             if (item->status == 1) {  
                 pthread_mutex_lock(&cache_mutex);
                 lookup_element_to_cache(item->ip, item->mac);
-                dequeue(&q);
+                dequeue(&pending_queue);
                 pthread_mutex_unlock(&cache_mutex);
             } else if (item->count2 < 5) {
                 send_arp_request(iface, mac_src, ip_src, item->ip);
@@ -99,7 +98,7 @@ void *thread_send_arp(void *arg) {
             } else {
                 printf("Max retries reached for %s, removing from queue.\n", item->ip);
                 pthread_mutex_lock(&cache_mutex);
-                dequeue(&q);
+                dequeue(&pending_queue);
                 pthread_mutex_unlock(&cache_mutex);
             }
         }
@@ -111,24 +110,27 @@ void *thread_send_arp(void *arg) {
 
 
 void *thread_receive_arp(void *arg) {
-    char *iface = (char *) arg;
+    char *iface = (char *)arg;
 
     while (1) {
-        receive_arp(iface);
+        arp_status_t status = receive_arp(iface);
+
         pthread_mutex_lock(&cache_mutex);
-        if (flag == 2) {
-            update_queue(&q, ip_dst, mac_dst);
-            flag = 0;
-        }
-        if (flag == 1) {
+
+        if (status == ARP_REPLY) {
+            update_queue(&pending_queue, ip_dst, mac_dst);
+        } 
+        else if (status == ARP_REQUEST) {
             send_arp_reply(iface, mac_src, ip_src, mac_dst, ip_dst);
-            flag = 0;
         }
+
         pthread_mutex_unlock(&cache_mutex);
         sleep(1);
     }
+
     return NULL;
 }
+
 
 void *thread_manage_cache(void *arg) {
     int cache_timeout = *(int *) arg;
@@ -164,7 +166,7 @@ int main(int argc, char *argv[]) {
     //disable_kernel_arp(iface);
     server_sock = setup_socket();
     //create_daemon();
-    init_queue(&q);
+    init_queue(&pending_queue);
     
     pthread_t cli_thread, send_thread, recv_thread, cache_thread;
     

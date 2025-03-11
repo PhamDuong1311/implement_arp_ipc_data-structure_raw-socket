@@ -46,6 +46,18 @@ typedef struct {
     int front, rear, size;       
 } queue_t;
 
+typedef struct {
+    char cmd;
+    char ip[16];
+    char mac[18];
+} msg_t;
+
+typedef enum {
+    ARP_NONE = 0,    
+    ARP_REQUEST,     
+    ARP_REPLY        
+} arp_status_t;
+
 extern int arp_cache_size;
 extern struct arp_entry *arp_cache_head;
 extern struct arp_entry arp_cache[MAX_ARP_CACHE_SIZE];
@@ -54,13 +66,11 @@ extern uint8_t mac_dst[6];
 extern uint8_t ip_dst[4];
 extern uint8_t mac_src[6];
 extern uint8_t ip_src[4];
-extern int flag;
 
-extern char buffer[256];
 extern char ip_str[16];
 extern int exist_mac;
 
-extern queue_t q;
+extern queue_t pending_queue;
 
 
 #endif

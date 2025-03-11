@@ -121,47 +121,50 @@ void send_arp_reply(const char *iface, uint8_t *src_mac, uint8_t *src_ip, uint8_
     close(sockfd);
 }
 
-void receive_arp(const char *iface) {
+arp_status_t receive_arp(const char *iface) {
     int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
     if (sockfd < 0) {
         perror("Socket error");
         exit(1);
     }
-        uint8_t msg[100];
-        struct sockaddr_ll addr;
-        socklen_t addr_len = sizeof(addr);
-        int len = recvfrom(sockfd, msg, sizeof(msg), 0, (struct sockaddr *)&addr, &addr_len);
-        if (len < 0) {
-            perror("Recvfrom error");
-            return;
+
+    uint8_t msg[100];
+    struct sockaddr_ll addr;
+    socklen_t addr_len = sizeof(addr);
+    int len = recvfrom(sockfd, msg, sizeof(msg), 0, (struct sockaddr *)&addr, &addr_len);
+    if (len < 0) {
+        perror("Recvfrom error");
+        close(sockfd);
+        return ARP_NONE;
+    }
+
+    struct ether_header *eth = (struct ether_header *)msg;
+    struct arp_header *arp = (struct arp_header *)(msg + 14);
+
+    if (ntohs(eth->ether_type) == ETH_P_ARP) {
+        if (memcmp(arp->tpa, ip_src, 4) == 0) {
+            if (ntohs(arp->oper) == 1) {  
+                printf("[Received ARP Request] from: %d.%d.%d.%d (%02X:%02X:%02X:%02X:%02X:%02X)\n",
+                       arp->spa[0], arp->spa[1], arp->spa[2], arp->spa[3],
+                       arp->sha[0], arp->sha[1], arp->sha[2], arp->sha[3], arp->sha[4], arp->sha[5]);
+                memcpy(ip_dst, arp->spa, 4);
+                memcpy(mac_dst, arp->sha, 6);
+                close(sockfd);
+                return ARP_REQUEST;
+            } else if (ntohs(arp->oper) == 2) {  
+                printf("[Received ARP Reply] from: %d.%d.%d.%d (%02X:%02X:%02X:%02X:%02X:%02X)\n",
+                       arp->spa[0], arp->spa[1], arp->spa[2], arp->spa[3],
+                       arp->sha[0], arp->sha[1], arp->sha[2], arp->sha[3], arp->sha[4], arp->sha[5]);
+                memcpy(ip_dst, arp->spa, 4);
+                memcpy(mac_dst, arp->sha, 6);
+                close(sockfd);
+                return ARP_REPLY;
+            }
         }
-
-        struct ether_header *eth = (struct ether_header *)msg;
-        struct arp_header *arp = (struct arp_header *)(msg + 14);
-
-        if (ntohs(eth->ether_type) == ETH_P_ARP) {
-        	if (memcmp(arp->tpa, ip_src, 4) == 0) {
-    		    
-		    if (ntohs(arp->oper) == 1) {  
-		        printf("[Received ARP Request] from: %d.%d.%d.%d (%02X:%02X:%02X:%02X:%02X:%02X)\n",
-		               arp->spa[0], arp->spa[1], arp->spa[2], arp->spa[3],
-		               arp->sha[0], arp->sha[1], arp->sha[2], arp->sha[3], arp->sha[4], arp->sha[5]);
-		        flag = 1;
-		        memcpy(ip_dst, arp->spa, 4);
-		        memcpy(mac_dst, arp->sha, 6);
-		    } else if (ntohs(arp->oper) == 2) {  
-		        printf("[Received ARP Reply] from: %d.%d.%d.%d (%02X:%02X:%02X:%02X:%02X:%02X)\n",
-		               arp->spa[0], arp->spa[1], arp->spa[2], arp->spa[3],
-		               arp->sha[0], arp->sha[1], arp->sha[2], arp->sha[3], arp->sha[4], arp->sha[5]);
-		        
-		        memcpy(ip_dst, arp->spa, 4);
-		        memcpy(mac_dst, arp->sha, 6);
-		        flag = 2;
-		    }
-		}
     }
 
     close(sockfd);
+    return ARP_NONE;
 }
 
 
