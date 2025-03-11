@@ -1,7 +1,7 @@
 # Software Design Description
 ## For ARP Implementation using Raw Socket
 
-Version 0.2
+Version 0.3
 Prepared by Pham Hong Duong  
  
 Table of Contents
@@ -48,7 +48,7 @@ Project này sẽ triển khai giao thức **ARP** trong **userspace**, sử d�
 - etc... 
 ## 2. Design
 ### 2.1 Context
-Hệ thống bao gồm một daemon chạy nền chịu trách nhiệm quản lý ARP cache và xử lý các yêu cầu gửi ARP Request. CLI được thiết kế để tương tác với daemon thông qua giao tiếp liên trình (IPC), cho phép thực hiện các thao tác trên ARP cache như thêm, xóa, hiển thị và tìm kiếm các mục trong cache. Daemon chạy nền duy trì bảng ARP cache, nhận và xử lý các lệnh từ CLI qua socket hoặc một cơ chế IPC khác, thực hiện ARP Request ra bên ngoài khi cần tìm địa chỉ MAC của một IP chưa có trong cache và cập nhật cache với các phản hồi ARP nhận được. CLI cung cấp các lệnh như add <IP> <MAC> để thêm một cặp IP-MAC vào ARP cache, delete <IP> để xóa một mục khỏi cache, show để hiển thị toàn bộ ARP cache và find <IP> để kiểm tra xem một IP có trong cache hay không. Khi nhận lệnh tìm kiếm một IP chưa có trong cache, daemon sẽ gửi ARP Request lên mạng và cập nhật cache khi nhận được ARP Reply. Giao tiếp giữa CLI và daemon đảm bảo CLI có thể truy vấn ARP cache nhanh chóng và daemon có thể tự động cập nhật địa chỉ MAC khi cần thiết. Để tránh xung đột với xử lý ARP của kernel, hệ thống sẽ vô hiệu hóa ARP trên giao diện mạng bằng cách cấu hình sysctl hoặc thông qua lệnh ip link set dev <interface> arp off, đảm bảo mọi yêu cầu ARP đều do daemon quản lý. Ngoài ra, daemon cũng có thể nhận các ARP Request từ bên ngoài và phản hồi lại với địa chỉ MAC tương ứng của nó, thay thế hoàn toàn vai trò của kernel trong việc xử lý ARP Reply.
+Hệ thống bao gồm một **daemon** chạy nền chịu trách nhiệm quản lý **ARP cache** và xử lý các yêu cầu gửi, nhận **ARP Request** và **ARP reply**. **CLI** được thiết kế để tương tác với **daemon** thông qua **IPC**, cho phép thực hiện các thao tác trên **ARP cache** như **add**, **delete**, **show** và **find** các mục trong **cache**. **CLI** cung cấp các lệnh như `add <IP> <MAC>` để thêm một cặp **IP-MAC** vào **ARP** **cache**, `delete <IP>` để xóa một mục khỏi **cache**, `show` để hiển thị toàn bộ **ARP cache** và `find <IP>` để kiểm tra xem một **IP** có trong **cache** hay không. Khi nhận lệnh tìm kiếm một **IP** chưa có trong **cache**, **daemon** sẽ gửi **ARP Request** lên mạng và cập nhật **cache** khi nhận được **ARP Reply**. Giao tiếp giữa **CLI** và **daemon** đảm bảo **CLI** có thể truy vấn **ARP cache** nhanh chóng và **daemon** có thể tự động cập nhật địa chỉ **MAC** khi cần thiết. Để tránh xung đột với xử lý **ARP** của **kernel**, hệ thống sẽ vô hiệu hóa **ARP** trên **interface mạng** bằng lệnh `ip link set dev <interface> arp off`, đảm bảo mọi yêu cầu **ARP** đều do **daemon** quản lý. Ngoài ra, **daemon** cũng có thể nhận các **ARP Request** từ bên ngoài và **ARP Reply** với địa chỉ **MAC** tương ứng của nó, thay thế hoàn toàn vai trò của **kernel**.
 ### 2.2 Implementation
 - **Daemon**:
   + Chạy nền dưới dạng process.
@@ -57,22 +57,33 @@ Hệ thống bao gồm một daemon chạy nền chịu trách nhiệm quản l�
   + Tắt xử lý ARP tại kernel network stack.
   + Giao tiếp với CLI qua IPC.
   + Gửi và nhận ARP request/reply.
-  + Lưu trữ ARP cache với timeout 100 giây.
+  + Lưu trữ ARP cache có timeout.
+  + Xuất file lưu trữ ARP cache.
 - **CLIs**:
   + Nhận lệnh từ người dùng để thông báo tới daemon.
   + Hiển thị kết quả mà daemon trả lại.
 
 ### 2.4 System Model
-chưa sửa
 
-![image](https://github.com/user-attachments/assets/de17fca0-b4f2-4f57-98fe-48356cee1c4e)
+![image](https://github.com/user-attachments/assets/82c75231-33b8-4edd-8a35-f2e15bf08485)
 
 
-- **CLI gửi thông báo**: Người dùng nhập lệnh trong CLI, CLI gửi thông báo qua IPC tới daemon.
-- **Daemon nhận thông báo**: Daemon nhận thông báo từ CLI, kiểm tra địa chỉ CLI yêu cầu xem có trong ARP cache không, nếu không thì tiến hành gửi ARP Request tới các interface mạng của hệ thống.
-- **Daemon nhận ARP Reply**: Daemon nhận ARP Reply từ thiết bị mạng với IP-MAC cần thiết.
-- **Daemon trả kết quả cho CLI**: Daemon gửi kết quả (MAC) về cho CLI.
-- **Daemon lưu vào ARP Cache**: Daemon lưu thông tin IP-MAC vào ARP cache theo 1 data structure và gán timeout cho entry đó.
+Mô tả quá trình hoạt động:
+    Tắt xử lý ARP trong Kernel:
+        Lệnh ip link set dev <interface> arp off được sử dụng để tắt chức năng xử lý ARP của nhân Linux.
+        Điều này ngăn Kernel tự động phản hồi hoặc gửi ARP request.
+
+    Daemon trong Userspace thay thế Kernel xử lý ARP:
+        CLI (giao diện dòng lệnh) tương tác với Daemon thông qua IPC (Inter-Process Communication).
+        Daemon thực hiện hai tác vụ chính với ARP Cache:
+            POST: Lưu các mục ARP mới vào cache.
+            GET: Truy xuất địa chỉ MAC từ ARP cache.
+        Daemon có thể xuất ARP cache ra file để lưu trữ.
+
+    Trao đổi ARP giữa Host A và các Host khác:
+        Khi một tiến trình trên Host B (ví dụ CLI thực hiện lệnh ping) cần biết địa chỉ MAC của Host A, nó sẽ gửi ARP Request.
+        Host A không để Kernel phản hồi mà Daemon trong Userspace sẽ tiếp nhận ARP Request, tìm địa chỉ MAC trong ARP cache, và nếu có, sẽ gửi ARP Reply.
+        Nếu Daemon không tìm thấy trong cache, nó có thể gửi ARP Request tới các Host khác để tìm kiếm địa chỉ MAC phù hợp.
 ### 2.5 Communication Diagram
 chưa sửa
 
