@@ -87,11 +87,11 @@ Hệ thống bao gồm một **daemon** chạy nền chịu trách nhiệm quả
 ### 2.4 Algorithm flowchart
 #### a. Daemon
 
-**![ảnh](https://github.com/user-attachments/assets/42a4a3af-e645-40aa-96c9-ef55a042868a)
-**
+![image](https://github.com/user-attachments/assets/4e30367e-befc-4aab-af73-6120344e5aec)
+
 #### b. CLI
 
-![image](https://github.com/user-attachments/assets/5dd6452b-5a83-4be7-bc8e-6182d62aaff1)
+![image](https://github.com/user-attachments/assets/596d33db-46a1-4ed4-801e-a4c7fe7dda4b)
 
 #### c. Giao tiếp ngoại 
 
