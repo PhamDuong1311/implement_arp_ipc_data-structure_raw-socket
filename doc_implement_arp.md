@@ -14,11 +14,10 @@ Table of Contents
 * 2 [Design](#2-overall-description)
     * 2.1 [Context](#21-context)
     * 2.2 [Implementation](#22-implementation)
-    * 2.4 [System Model](#24-system-model)
-    * 2.5 [Communication Diagram](#25-communication-diagram)
-    * 2.6 [Algorithm flowchart](#26-algorithm-flowchart)
-    * 2.7 [Features](#27-features)
-    * 2.8 [Running the code](#28-running-the-code)
+    * 2.3 [System Model](#23-system-model)
+    * 2.4 [Algorithm flowchart](#24-algorithm-flowchart)
+    * 2.5 [Modules Structure in Daemon process](#25-modules-structure-in-daemon-process)
+    * 2.6 [Running the code](#26-running-the-code)
 
 ## 1. Introduction
 Document này là cung cấp mô tả thiết kế phần mềm cho việc implement bộ giao thức **ARP** tương tự trên **Linux OS**. Document sẽ mô tả các yêu cầu, thiết kế, và các chi tiết implement phần mềm **ARP** => giúp hiểu rõ về cách hệ thống hoạt động và tương tác với mạng.
@@ -63,97 +62,63 @@ Hệ thống bao gồm một **daemon** chạy nền chịu trách nhiệm quả
   + Nhận lệnh từ người dùng để thông báo tới daemon.
   + Hiển thị kết quả mà daemon trả lại.
 
-### 2.4 System Model
+### 2.3 System Model
 
 ![image](https://github.com/user-attachments/assets/82c75231-33b8-4edd-8a35-f2e15bf08485)
 
 
-Mô tả quá trình hoạt động:
-    Tắt xử lý ARP trong Kernel:
-        Lệnh ip link set dev <interface> arp off được sử dụng để tắt chức năng xử lý ARP của nhân Linux.
-        Điều này ngăn Kernel tự động phản hồi hoặc gửi ARP request.
+**Mô tả quá trình hoạt động:**
 
-    Daemon trong Userspace thay thế Kernel xử lý ARP:
-        CLI (giao diện dòng lệnh) tương tác với Daemon thông qua IPC (Inter-Process Communication).
-        Daemon thực hiện hai tác vụ chính với ARP Cache:
-            POST: Lưu các mục ARP mới vào cache.
-            GET: Truy xuất địa chỉ MAC từ ARP cache.
-        Daemon có thể xuất ARP cache ra file để lưu trữ.
+    - Tắt xử lý **ARP** trong **Kernel**:
+        - Lệnh `ip link set dev <interface> arp off` được sử dụng để tắt chức năng xử lý **ARP** của ** nhân Linux**.
+        - Điều này ngăn **Kernel** tự động phản hồi **ARP reply** hoặc gửi **ARP request**.
 
-    Trao đổi ARP giữa Host A và các Host khác:
-        Khi một tiến trình trên Host B (ví dụ CLI thực hiện lệnh ping) cần biết địa chỉ MAC của Host A, nó sẽ gửi ARP Request.
-        Host A không để Kernel phản hồi mà Daemon trong Userspace sẽ tiếp nhận ARP Request, tìm địa chỉ MAC trong ARP cache, và nếu có, sẽ gửi ARP Reply.
-        Nếu Daemon không tìm thấy trong cache, nó có thể gửi ARP Request tới các Host khác để tìm kiếm địa chỉ MAC phù hợp.
-### 2.5 Communication Diagram
-chưa sửa
+    - **Daemon** trong **Userspace** thay thế **Kernel** xử lý **ARP**:
+        - **CLI** tương tác với **Daemon** thông qua **IPC**.
+        - **Daemon** thực hiện hai tác vụ chính với **ARP Cache**:
+            - **POST**: Lưu các mục **ARP** mới vào **cache**.
+            - **GET**: Truy vấn từ **ARP cache**.
+        - **Daemon** có thể xuất **ARP cache** ra **file** để lưu trữ.
 
-![image](https://github.com/user-attachments/assets/53fa10a7-fa45-43e0-b8b7-344429a942cd)
+    - Trao đổi **ARP** giữa **Host A** và **các Host khác**:
+        - Khi một tiến trình trên **Host B** (ví dụ **CLI** thực hiện lệnh **ping**) cần biết địa chỉ **MAC** của **Host A**, nó sẽ gửi **ARP Request**.
+        - **Host A** không để **Kernel** phản hồi mà **Daemon** trong **Userspace** sẽ tiếp nhận **ARP Request**, gửi lại ARP reply địa chỉ MAC của chính nó.
+        - **Daemon** phân tích yêu cầu từ **CLI**, nếu **CLI** yêu cầu tìm 1 **IP** không có trong **ARP cache**, daemon sẽ gửi **ARP Request** tới các **Host** khác để tìm kiếm địa chỉ **MAC** phù hợp.
 
-### 2.6 Algorithm flowchart
+### 2.4 Algorithm flowchart
 #### a. Daemon
 
 **![ảnh](https://github.com/user-attachments/assets/42a4a3af-e645-40aa-96c9-ef55a042868a)
 **
 #### b. CLI
 
-![ảnh](https://github.com/user-attachments/assets/d1c37ecc-81ac-485a-adac-b79dab919368)
+![image](https://github.com/user-attachments/assets/5dd6452b-5a83-4be7-bc8e-6182d62aaff1)
 
 #### c. Giao tiếp ngoại 
 
 ![ảnh](https://github.com/user-attachments/assets/bc28a836-25ec-43c4-a9dd-017c204d50c4)
 
-### 2.7 Features
-#### a. Giao tiếp giữa Daemon và CLI
-Sử dụng **Unix domain socket** vì:
-- **Buffer trên Kernel (Backlog)**:
- - Khi nhiều **CLI** gửi đến cùng lúc, các kết nối được xếp vào **queue** (backlog) của `listen()`.
- - Mặc định, chỉ khi **queue** này đầy, các kết nối mới bị từ chối.
-- **Kết nối độc lập**:
- - Mỗi khi **Daemon** `accept()`, mỗi yêu cầu của **CLI** sẽ được gán một **socket** riêng (**file descriptor** riêng).
- - Các kết nối hoạt động độc lập, dữ liệu từ **CLI A** không bao giờ lẫn với **CLI B**.
-- Sử dụng `select()` hoặc `epoll()` để **daemon** có thể xử lý nhiều **CLI**.
+### 2.5 Modules Structure in Daemon process
 
-#### b. ARP cache
+![image](https://github.com/user-attachments/assets/9ddf5513-a33e-4e74-b4fa-e8bc8e9b4c2e)
 
-```c
-struct arp_entry {
-    char ip_addr[16];        
-    char mac_addr[18];       
-    time_t timestamp;        
-};
-```
+**Chức năng từng module:**
+ - **general module**: Chứa các định nghĩa dùng chung, các struct, khai báo các biến extern.
+ - **main_thread module**: Chứa các hàm được khởi tại ở main thread của daemon.c
+ - **ipc_daemon module**: Chứa các hàm giao tiếp với CLI và phân tích yêu cầu từ CLI.
+ - **arp module**: Chứa các hàm gửi, nhận ARP request và ARP reply.
+ - **arp_cache module**: chứa các hàm quản lý ARP cache table.
+ - **pending_queue module**: chứa các hàm quản lý pending queue.
 
-Lựa chọn **Hash map**, bởi vì em thấy rằng dữ liệu được lưu trữ phụ thuộc vào **IP addr**, nên coi **IP addr** sẽ là **key** và cặp **(MAC addr và timestamp)** sẽ là **value**, dưới đây là mô tả:
-- **Key**: Địa chỉ IP (string hoặc số nguyên sau khi chuyển đổi từ IP).
-- **Value**: Cấu trúc arp_entry chứa MAC addr và timestamp.
-- Sử dụng hash function để ánh xạ IP addr thành vị trí trong bảng.
-
-```c
-struct arp_entry {
-    char ip_addr[16];      // Địa chỉ IP (key)
-    char mac_addr[18];     // Địa chỉ MAC
-    time_t timestamp;      // Thời điểm lưu entry
-    UT_hash_handle hh;     // Cấu trúc hỗ trợ trong uthash
-};
-```
-
-**Ưu điểm**:
-- Dễ dàng kiểm tra xem IP addr đã tồn tại hay chưa.
-- Phù hợp với ARP cache vì số lượng phần tử không quá lớn.
-
-### 2.8 Running the code
+### 2.6 Running the code
 - Chạy **Daemon process** ở Terminal 1:
   - $ cd Code_Daemon
   - $ make
-  - sudo ./daemon
-  - Ở trong **arp cache table** đã lưu trữ sẵn địa chỉ `(192.168.1.1, 11:22:33:44:55:66)` để test
+  - sudo ./daemon -i <interface> -t <timeout>
 - Chạy **CLI process** ở Terminal 2:
   - $ cd Code_CLI
   - $ make
-  - $ ./cli
-  - Nhập input là địa chỉ IP đích cần truy vấn (giả sử muốn test với địa chỉ IP lưu sẵn là `192.168.1.1`)
+  - $ sudo ./cli
  
-=> Input ở Terminal 2 là địa chỉ MAC đích.
 
-- Vấn đề chưa giải quyết: Em đã test hết các module ở trong Daemon và đã chạy thành công, chỉ có module `(arp.c, arp.h)` là chưa test được vì em chưa cài linux để bắt bản tin arp giữa 2 máy => em lưu trữ sẵn 1 cặp địa chỉ IP, MAC vào **arp cache table** sẵn để test => đã hoàn thành.
 
