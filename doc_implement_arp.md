@@ -64,12 +64,12 @@ Hệ thống bao gồm một **daemon** chạy nền chịu trách nhiệm quả
 
 ### 2.3 System Model
 
-![image](https://github.com/user-attachments/assets/82c75231-33b8-4edd-8a35-f2e15bf08485)
+![System Model](image/system.drawio.png)
 
 
 **Mô tả quá trình hoạt động:**
   - Tắt xử lý **ARP** trong **Kernel**:
-      - Lệnh `ip link set dev <interface> arp off` được sử dụng để tắt chức năng xử lý **ARP** của ** nhân Linux**.
+      - Lệnh `ip link set dev <interface> arp off` được sử dụng để tắt chức năng xử lý **ARP** của **Linux**.
       - Điều này ngăn **Kernel** tự động phản hồi **ARP reply** hoặc gửi **ARP request**.
 
   - **Daemon** trong **Userspace** thay thế **Kernel** xử lý **ARP**:
@@ -87,11 +87,11 @@ Hệ thống bao gồm một **daemon** chạy nền chịu trách nhiệm quả
 ### 2.4 Algorithm flowchart
 #### a. Daemon
 
-![image](https://github.com/user-attachments/assets/4e30367e-befc-4aab-af73-6120344e5aec)
+![Daemon program](image/Daemon.drawio.png)
 
 #### b. CLI
 
-![image](https://github.com/user-attachments/assets/596d33db-46a1-4ed4-801e-a4c7fe7dda4b)
+![CLI program](image/CLI.drawio.png)
 
 #### c. Giao tiếp ngoại 
 
@@ -99,7 +99,7 @@ Hệ thống bao gồm một **daemon** chạy nền chịu trách nhiệm quả
 
 ### 2.5 Modules Structure in Daemon process
 
-![image](https://github.com/user-attachments/assets/9ddf5513-a33e-4e74-b4fa-e8bc8e9b4c2e)
+![Modules Structure](image/module.drawio.png)
 
 **Chức năng từng module:**
  - **general module**: Chứa các định nghĩa dùng chung, các struct, khai báo các biến extern.
