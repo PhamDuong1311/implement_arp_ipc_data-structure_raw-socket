@@ -3,6 +3,7 @@
 
 #include <time.h>
 #include <stdint.h>
+#include <arpa/inet.h>
 
 #include "uthash.h"
 
@@ -71,6 +72,8 @@ extern char ip_str[16];
 extern int exist_mac;
 
 extern queue_t pending_queue;
+extern msg_t msg_from_cli;
+
 
 
 #endif

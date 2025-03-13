@@ -26,7 +26,7 @@ int setup_socket() {
 }
 
 void send_request(int sockfd, msg_t *query) {
-    if (send(sockfd, query, sizeof(query), 0) == -1) {
+    if (send(sockfd, query, sizeof(*query), 0) == -1) {
         perror("send failed");
         close(sockfd);
         exit(EXIT_FAILURE);
@@ -72,10 +72,8 @@ int main(int argc, char *argv[]) {
                     query.cmd = 'a';
                     strncpy(query.ip, optarg, sizeof(query.ip) - 1);
                     strncpy(query.mac, argv[optind], sizeof(query.mac) - 1);
-
                     send_request(sockfd, &query);  
                     receive_response(sockfd);
-                    optind++;
                 } else {
                     fprintf(stderr, "Error: -a requires an IP and MAC address\n");
                     return EXIT_FAILURE;

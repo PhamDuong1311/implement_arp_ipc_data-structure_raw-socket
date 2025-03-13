@@ -20,10 +20,8 @@ int receive_request(int server_sock) {
         perror("accept failed");
         return -1;  
     }
-    memset(msg_from_cli, 0, sizeof(msg_from_cli));
-    bytes_received = recv(client_sock, msg_from_cli, sizeof(msg_from_cli) - 1, 0);
+    bytes_received = recv(client_sock, &msg_from_cli, sizeof(msg_from_cli) - 1, 0);
     if (bytes_received > 0) {
-        buffer[bytes_received] = '\0';
         return client_sock;  
     } else {
         printf("Error: Received empty data or failed\n");
@@ -42,13 +40,15 @@ void send_response(int client_sock, const char *message) {
 void process_request(int client_sock, msg_t *msg_from_cli) {
     char mac_str[18];
     unsigned char mac[6];
+    unsigned char ip[4];
     char response[1024];
 
     printf("\n------------------------------------------------------\n");
-    printf("Received command: %s %s %s\n", msg_from_cli->cmd, msg_from_cli->ip, msg_from_cli->mac);
+    printf("Received command: %c %s %s\n", msg_from_cli->cmd, msg_from_cli->ip, msg_from_cli->mac);
+    printf("MAC Address received: '%s'\n", msg_from_cli->mac);  // In địa chỉ MAC nhận được
 
     if (msg_from_cli->cmd == 'a') {  
-        if (inet_pton(AF_INET, msg_from_cli->ip, &ip_addr) == 1) { 
+        if (inet_pton(AF_INET, msg_from_cli->ip, &ip) == 1) { 
             if (sscanf(msg_from_cli->mac, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
                        &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]) == 6) {
                 lookup_element_to_cache(msg_from_cli->ip, mac);
@@ -59,16 +59,16 @@ void process_request(int client_sock, msg_t *msg_from_cli) {
         } else {
             send_response(client_sock, "Invalid IP address format");
         }
-    } else if (strncmp(buffer, "DELETE", 6) == 0) {
-        if (sscanf(buffer, "DELETE %15s", ip_str) == 1) {
-            delete_element_from_cache(ip_str);
+    } else if (msg_from_cli->cmd == 'd') {
+        if (inet_pton(AF_INET, msg_from_cli->ip, &ip) == 1) {
+            delete_element_from_cache(msg_from_cli->ip);
             send_response(client_sock, "ARP entry deleted");
         } else {
-            send_response(client_sock, "Invalid DELETE command format");
+            send_response(client_sock, "Invalid IP address format");
         }
-    } else if (strncmp(buffer, "FIND", 4) == 0) {
-        if (sscanf(buffer, "FIND %15s", ip_str) == 1) {
-            uint8_t *mac_found = get_element_from_cache(ip_str);
+    } else if (msg_from_cli->cmd == 'f') {
+        if (inet_pton(AF_INET, msg_from_cli->ip, &ip) == 1) {
+            uint8_t *mac_found = get_element_from_cache(msg_from_cli->ip);
             if (mac_found != NULL) {
 		    memcpy(mac, mac_found, 6);
 	            exist_mac = 1;
@@ -80,9 +80,9 @@ void process_request(int client_sock, msg_t *msg_from_cli) {
 		exist_mac = 0;
 	    }
         } else {
-            send_response(client_sock, "Invalid FIND command format");
+            send_response(client_sock, "Invalid IP address format");
         }
-    } else if (strcmp(buffer, "SHOW") == 0) {
+    } else if (msg_from_cli->cmd == 's') {
         show_arp_cache(response, 1023);
         send_response(client_sock, response);
     } else {

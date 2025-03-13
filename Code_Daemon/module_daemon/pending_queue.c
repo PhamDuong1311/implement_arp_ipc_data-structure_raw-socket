@@ -46,14 +46,6 @@ void dequeue(queue_t *q) {
 }
 
 
-
-queue_item_t* list_queue(queue_t *q) {
-    if (is_queue_empty(q)) {
-        return NULL;
-    }
-    return &q->items[q->front];
-}
-
 void update_queue(queue_t *q, uint8_t *ip, uint8_t *mac) {
     if (is_queue_empty(q)) {
         return;

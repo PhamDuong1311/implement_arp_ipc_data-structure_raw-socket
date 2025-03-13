@@ -25,7 +25,6 @@ uint8_t mac_src[6] = {0};
 uint8_t ip_src[4] = {0};
 
 int exist_mac = 1; 
-char ip_str[16] = {0};
 
 msg_t msg_from_cli = {0};
 queue_t pending_queue = {0};
@@ -42,15 +41,15 @@ void *thread_cli_handler(void *arg) {
     while (1) {
         client_sock = receive_request(server_sock);
         if (client_sock != -1) {  
-            process_request(client_sock, buffer);
+            process_request(client_sock, &msg_from_cli);
         }
         if (exist_mac == 0) {
             pthread_mutex_lock(&cache_mutex);
-            enqueue(&pending_queue, ip_str, mac_default, 0, 0);
+            enqueue(&pending_queue, msg_from_cli.ip, mac_default, 0, 0);
             pthread_mutex_unlock(&cache_mutex);
             while (count1 < 5) {
                 sleep(5);
-                uint8_t *mac_found = get_element_from_cache(ip_str);
+                uint8_t *mac_found = get_element_from_cache(msg_from_cli.ip);
                 if (mac_found != NULL) {
                     exist_mac = 1;
                     memcpy(mac, mac_found, 6);
@@ -80,28 +79,24 @@ void *thread_send_arp(void *arg) {
 
     while (1) {
         pthread_mutex_lock(&cache_mutex);
-        queue_item_t *item = list_queue(&pending_queue);
-        pthread_mutex_unlock(&cache_mutex);
 
-        if (item) {
-            if (item->status == 1) {  
-                pthread_mutex_lock(&cache_mutex);
-                lookup_element_to_cache(item->ip, item->mac);
-                dequeue(&pending_queue);
-                pthread_mutex_unlock(&cache_mutex);
-            } else if (item->count2 < 5) {
-                send_arp_request(iface, mac_src, ip_src, item->ip);
+        for (int i = 0; i < pending_queue.size; i++) {
+            queue_item_t *item = &pending_queue.items[i];
+            if (item) {
+                if (item->status == 1) {  
+                    lookup_element_to_cache(item->ip, item->mac);
+                    dequeue(&pending_queue);
+                } else if (item->count2 < 5) {
+                    send_arp_request(iface, mac_src, ip_src, item->ip);
 
-                pthread_mutex_lock(&cache_mutex);
-                item->count2++;
-                pthread_mutex_unlock(&cache_mutex);
-            } else {
-                printf("Max retries reached for %s, removing from queue.\n", item->ip);
-                pthread_mutex_lock(&cache_mutex);
-                dequeue(&pending_queue);
-                pthread_mutex_unlock(&cache_mutex);
+                    item->count2++;
+                } else {
+                    printf("Max retries reached for %s, removing from queue.\n", item->ip);
+                    dequeue(&pending_queue);
+                }
             }
         }
+        pthread_mutex_unlock(&cache_mutex);
 
         sleep(2);
     }
