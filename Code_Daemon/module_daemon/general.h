@@ -47,6 +47,12 @@ typedef struct {
     int front, rear, size;       
 } queue_t;
 
+// Định nghĩa cấu trúc Pending linked list
+typedef struct Node {
+    queue_item_t data;
+    struct Node* next;
+} linked_list_t;
+
 typedef struct {
     char cmd;
     char ip[16];
